@@ -4,6 +4,8 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },
     ],
+    // Allow local images in public folder
+    unoptimized: false,
   },
 }
 

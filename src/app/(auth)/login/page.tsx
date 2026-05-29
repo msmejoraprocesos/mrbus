@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Loader2, Bus, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,23 +17,16 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e) {
     e.preventDefault()
-    if (!email || !password) {
-      toast.error('Ingresa tu correo y contraseña')
-      return
-    }
+    if (!email || !password) { toast.error('Ingresa tu correo y contraseña'); return }
 
     setLoading(true)
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
 
-    if (error) {
-      toast.error('Credenciales incorrectas. Verifica tu correo y contraseña.')
-      return
-    }
+    if (error) { toast.error('Credenciales incorrectas. Verifica tu correo y contraseña.'); return }
 
-    // Redirigir según rol
     const { data: userData } = await supabase
       .from('users')
       .select('role:roles(name)')
@@ -40,7 +34,8 @@ export default function LoginPage() {
       .single()
 
     const roleRaw = userData?.role
-    const role = (Array.isArray(roleRaw) ? (roleRaw[0] as { name: string })?.name : (roleRaw as { name: string } | null)?.name)
+    const role = Array.isArray(roleRaw) ? roleRaw[0]?.name : roleRaw?.name
+
     if (role === 'driver') {
       router.push('/driver/home')
     } else {
@@ -49,19 +44,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#0F3460] to-[#1a4a2e] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
 
-        {/* Logo y título */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
-            <Bus className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">TransportOS</h1>
-          <p className="text-blue-200 mt-1 text-sm">El sistema operativo de tu empresa de movilidad</p>
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Image
+            src="/logo.png"
+            alt="MrBus"
+            width={280}
+            height={120}
+            className="object-contain"
+            priority
+          />
         </div>
 
-        {/* Card de login */}
+        {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Iniciar sesión</h2>
 
@@ -119,8 +117,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-blue-200/60 text-xs mt-6">
-          TransportOS v1.0 · Uso exclusivo de personal autorizado
+        <p className="text-center text-white/30 text-xs mt-6">
+          MrBus v1.0 · Uso exclusivo de personal autorizado
         </p>
       </div>
     </div>
