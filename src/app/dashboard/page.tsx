@@ -35,8 +35,8 @@ export default async function DashboardPage() {
   const kpis = {
     total: tripList.length,
     active: tripList.filter((t: { status: string }) => ['boarding','in_transit'].includes(t.status)).length,
-    passengers: Object.values(counts).reduce((s, c) => s + (c as {total:number;boarded:number}).total, 0),
-    boarded: Object.values(counts).reduce((s, c) => s + (c as {total:number;boarded:number}).boarded, 0),
+    passengers: Object.values(counts).reduce((s: number, c) => s + (c as {total:number;boarded:number}).total, 0),
+    boarded: Object.values(counts).reduce((s: number, c) => s + (c as {total:number;boarded:number}).boarded, 0),
   }
 
   return (
