@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Loader2, Eye, EyeOff, Users, Briefcase, BarChart3, Shield } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Users, Briefcase, BarChart3, Shield, Package } from 'lucide-react'
 import Image from 'next/image'
 
 const features = [
@@ -11,6 +11,7 @@ const features = [
   { icon: Briefcase, title: 'Turismo y excursiones',        desc: 'Pasajeros, pagos y control de abordaje' },
   { icon: BarChart3, title: 'Gestión inteligente',          desc: 'Dashboard en tiempo real con KPIs operativos' },
   { icon: Shield,    title: 'Control total de tu operación',desc: 'Trazabilidad, compliance y auditoría' },
+  { icon: Package,   title: 'Paquetería y encomiendas',     desc: 'Registro, seguimiento y entrega de paquetes' },
 ]
 
 export default function LoginPage() {
@@ -44,7 +45,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 z-0">
           <Image src="/hero.jpg" alt="" fill className="object-cover object-center" priority />
           {/* Overlay gradiente para legibilidad */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, rgba(15,45,82,0.92) 0%, rgba(10,31,61,0.85) 50%, rgba(25,118,210,0.80) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, rgba(10,28,60,0.93) 0%, rgba(10,28,60,0.88) 50%, rgba(15,65,130,0.85) 100%)' }} />
         </div>
 
         {/* Patrón punteado */}
@@ -55,12 +56,15 @@ export default function LoginPage() {
         <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-10 z-10" style={{ background: '#00A86B' }} />
         <div className="absolute top-0 -left-20 w-64 h-64 rounded-full opacity-10 z-10" style={{ background: '#1976D2' }} />
 
-        {/* Logo */}
+        {/* Logo — mix-blend-mode elimina el fondo blanco */}
         <div className="relative z-20">
-          <Image src="/logo-mrbus.png" alt="MrBus" width={340} height={240}
-            className="object-contain"
-            style={{ filter: 'drop-shadow(0 8px 32px rgba(0,168,107,0.4)) brightness(1.05)' }}
-            priority />
+          <div className="inline-block rounded-2xl overflow-hidden"
+            style={{ mixBlendMode: 'screen' }}>
+            <Image src="/logo-mrbus.png" alt="MrBus" width={320} height={220}
+              className="object-contain"
+              style={{ filter: 'drop-shadow(0 4px 24px rgba(0,168,107,0.5)) brightness(1.1) contrast(1.05)' }}
+              priority />
+          </div>
         </div>
 
         {/* Features */}
