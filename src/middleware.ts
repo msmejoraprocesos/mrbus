@@ -27,16 +27,13 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Rutas públicas que no requieren sesión
-  const isPublic = pathname === '/' || pathname.startsWith('/forgot-password')
+  const isPublic = pathname === '/login' || pathname === '/'
 
-  // Si no hay sesión y no es ruta pública → redirigir al login (/)
   if (!user && !isPublic) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Si tiene sesión y está en login → redirigir al dashboard
-  if (user && pathname === '/') {
+  if (user && isPublic) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
