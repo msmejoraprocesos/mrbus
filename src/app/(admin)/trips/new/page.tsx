@@ -14,8 +14,8 @@ export default function NewTripPage() {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading]     = useState(false)
-  const [vehicles, setVehicles]   = useState<Vehicle[]>([])
-  const [drivers, setDrivers]     = useState<Driver[]>([])
+  const [vehicles, setVehicles]   = useState<Pick<Vehicle, 'id' | 'plate' | 'economic_number' | 'type' | 'capacity'>[]>([])
+  const [drivers, setDrivers]     = useState<Pick<Driver, 'id' | 'first_name' | 'last_name'>[]>([])
 
   const [form, setForm] = useState({
     type:               'tourism' as TripType,
@@ -49,7 +49,7 @@ export default function NewTripPage() {
   // Auto-llenar capacidad al elegir vehículo
   function handleVehicleChange(vehicleId: string) {
     set('vehicle_id', vehicleId)
-    const v = vehicles.find(v => v.id === vehicleId)
+    const v = vehicles.find((v: { id: string; capacity: number }) => v.id === vehicleId)
     if (v && !form.capacity) set('capacity', String(v.capacity))
   }
 
