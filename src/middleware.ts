@@ -28,14 +28,16 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Si no hay sesión y no está en login → redirigir a login
-  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/forgot-password')
-  if (!user && !isAuthRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Rutas públicas que no requieren sesión
+  const isPublic = pathname === '/' || pathname.startsWith('/forgot-password')
+
+  // Si no hay sesión y no es ruta pública → redirigir al login (/)
+  if (!user && !isPublic) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Si tiene sesión y está en login → redirigir según rol
-  if (user && isAuthRoute) {
+  // Si tiene sesión y está en login → redirigir al dashboard
+  if (user && pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -43,5 +45,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
