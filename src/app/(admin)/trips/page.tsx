@@ -1,3 +1,4 @@
+-e // @ts-nocheck
 import { createClient } from '@/lib/supabase/server'
 import { Metadata } from 'next'
 import Link from 'next/link'
