@@ -38,19 +38,25 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
 
       {/* IZQUIERDA — Branding */}
-      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #0F2D52 0%, #0a1f3d 50%, #1976D2 100%)' }}>
+      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden">
+
+        {/* Hero image de fondo */}
+        <div className="absolute inset-0 z-0">
+          <Image src="/hero.jpg" alt="" fill className="object-cover object-center" priority />
+          {/* Overlay gradiente para legibilidad */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, rgba(15,45,82,0.92) 0%, rgba(10,31,61,0.85) 50%, rgba(25,118,210,0.80) 100%)' }} />
+        </div>
 
         {/* Patrón punteado */}
-        <div className="absolute inset-0 opacity-5"
+        <div className="absolute inset-0 z-10 opacity-5"
           style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
         {/* Círculos decorativos */}
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-10" style={{ background: '#00A86B' }} />
-        <div className="absolute top-0 -left-20 w-64 h-64 rounded-full opacity-10" style={{ background: '#1976D2' }} />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-10 z-10" style={{ background: '#00A86B' }} />
+        <div className="absolute top-0 -left-20 w-64 h-64 rounded-full opacity-10 z-10" style={{ background: '#1976D2' }} />
 
         {/* Logo */}
-        <div className="relative z-10">
+        <div className="relative z-20">
           <Image src="/logo-mrbus.png" alt="MrBus" width={340} height={240}
             className="object-contain"
             style={{ filter: 'drop-shadow(0 8px 32px rgba(0,168,107,0.4)) brightness(1.05)' }}
@@ -58,7 +64,7 @@ export default function LoginPage() {
         </div>
 
         {/* Features */}
-        <div className="relative z-10 space-y-5">
+        <div className="relative z-20 space-y-5">
           <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-6">
             Todo lo que necesitas para operar
           </p>
@@ -80,7 +86,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div className="relative z-10">
+        <div className="relative z-20">
           <p className="text-white/30 text-xs">© 2024 MrBus · Versión 1.0</p>
         </div>
       </div>
