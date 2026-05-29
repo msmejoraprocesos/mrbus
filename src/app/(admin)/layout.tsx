@@ -1,4 +1,4 @@
--e // @ts-nocheck
+// @ts-nocheck
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminSidebar from '@/components/admin/AdminSidebar'

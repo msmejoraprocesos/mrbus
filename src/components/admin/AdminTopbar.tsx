@@ -1,4 +1,4 @@
--e // @ts-nocheck
+// @ts-nocheck
 'use client'
 
 import { useRouter } from 'next/navigation'
