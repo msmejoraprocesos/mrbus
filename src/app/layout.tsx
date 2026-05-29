@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   title: { default: 'MrBus', template: '%s | MrBus' },
   description: 'Sistema integral de gestión para transporte de personal y turismo',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'MrBus' },
 }
 
 export const viewport: Viewport = {
@@ -21,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <body>
         {children}
-        <Toaster position="top-right" richColors closeButton toastOptions={{ duration: 4000 }} />
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   )
