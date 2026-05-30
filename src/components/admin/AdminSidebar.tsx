@@ -49,17 +49,14 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
             <span className="text-white font-bold text-xs">MB</span>
           </div>
         ) : (
-          <div style={{ mixBlendMode: 'screen' }}>
-            <Image
-              src="/logo-mrbus.png"
-              alt="MrBus"
-              width={150}
-              height={65}
-              className="object-contain"
-              style={{ filter: 'brightness(1.2) contrast(1.1)' }}
-              priority
-            />
-          </div>
+          <Image
+            src="/logo-mrbus.png"
+            alt="MrBus"
+            width={150}
+            height={65}
+            className="object-contain"
+            priority
+          />
         )}
       </div>
 
