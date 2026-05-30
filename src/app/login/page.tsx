@@ -56,15 +56,12 @@ export default function LoginPage() {
         <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-10 z-10" style={{ background: '#00A86B' }} />
         <div className="absolute top-0 -left-20 w-64 h-64 rounded-full opacity-10 z-10" style={{ background: '#1976D2' }} />
 
-        {/* Logo — mix-blend-mode elimina el fondo blanco */}
+        {/* Logo */}
         <div className="relative z-20">
-          <div className="inline-block rounded-2xl overflow-hidden"
-            style={{ mixBlendMode: 'screen' }}>
-            <Image src="/logo-mrbus.png" alt="MrBus" width={320} height={220}
-              className="object-contain"
-              style={{ filter: 'drop-shadow(0 4px 24px rgba(0,168,107,0.5)) brightness(1.1) contrast(1.05)' }}
-              priority />
-          </div>
+          <Image src="/logo-mrbus.png" alt="MrBus" width={320} height={220}
+            className="object-contain"
+            style={{ mixBlendMode: 'screen', filter: 'brightness(1.1)' }}
+            priority />
         </div>
 
         {/* Features */}

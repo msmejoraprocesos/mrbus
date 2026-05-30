@@ -55,6 +55,7 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
             width={150}
             height={65}
             className="object-contain"
+            style={{ mixBlendMode: 'screen', filter: 'brightness(1.1)' }}
             priority
           />
         )}
