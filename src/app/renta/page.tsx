@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-export const metadata: Metadata = { title:  + label +  }
+export const metadata: Metadata = { title: 'Renta de Autobuses' }
 export default function Page() {
   return (
     <div className="space-y-5">
