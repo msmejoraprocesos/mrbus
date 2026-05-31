@@ -38,65 +38,79 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
 
-      {/* IZQUIERDA — Branding */}
-      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden">
+      {/* ── IZQUIERDA — Branding ── */}
+      <div className="hidden lg:flex lg:w-[58%] relative flex-col overflow-hidden">
 
-        {/* Hero image de fondo */}
+        {/* Foto de fondo */}
         <div className="absolute inset-0 z-0">
           <Image src="/hero.jpg" alt="" fill className="object-cover object-center" priority />
-          {/* Overlay gradiente para legibilidad */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(120,60,10,0.55) 0%, rgba(80,40,10,0.45) 30%, rgba(20,20,30,0.70) 70%, rgba(10,15,25,0.85) 100%)' }} />
         </div>
 
-        {/* Patrón punteado */}
-        <div className="absolute inset-0 z-10 opacity-5"
-          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+        {/* Overlay multi-capa: oscuro arriba + tono cálido al centro + oscuro abajo */}
+        <div className="absolute inset-0 z-10" style={{
+          background: 'linear-gradient(to bottom, rgba(5,10,20,0.80) 0%, rgba(10,15,30,0.50) 25%, rgba(150,75,10,0.30) 50%, rgba(10,15,30,0.65) 75%, rgba(5,8,18,0.92) 100%)'
+        }} />
 
-        {/* Círculos decorativos */}
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-10 z-10" style={{ background: '#00A86B' }} />
-        <div className="absolute top-0 -left-20 w-64 h-64 rounded-full opacity-10 z-10" style={{ background: '#1976D2' }} />
+        {/* Contenido sobre la imagen */}
+        <div className="relative z-20 flex flex-col justify-between h-full p-10">
 
-        {/* Logo — fondo transparente */}
-        <div className="relative z-20">
-          <Image src="/logo-mrbus.png" alt="MrBus" width={320} height={130}
-            className="object-contain drop-shadow-xl"
-            priority />
-        </div>
+          {/* Logo arriba a la izquierda */}
+          <div>
+            <Image
+              src="/logo-mrbus.png"
+              alt="MrBus"
+              width={260}
+              height={105}
+              className="object-contain"
+              style={{ filter: 'drop-shadow(0 3px 16px rgba(0,0,0,0.7)) brightness(1.05)' }}
+              priority
+            />
+          </div>
 
-        {/* Features */}
-        <div className="relative z-20 space-y-5">
-          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-6">
-            Todo lo que necesitas para operar
-          </p>
-          {features.map((f, i) => {
-            const Icon = f.icon
-            return (
-              <div key={i} className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(0,168,107,0.15)', border: '1px solid rgba(0,168,107,0.3)' }}>
-                  <Icon className="w-5 h-5" style={{ color: '#00A86B' }} />
-                </div>
-                <div>
-                  <p className="text-white font-semibold text-sm leading-tight">{f.title}</p>
-                  <p className="text-white/45 text-xs mt-0.5">{f.desc}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+          {/* Tagline centrado */}
+          <div className="text-center px-4">
+            <p className="text-white text-3xl font-bold leading-snug drop-shadow-lg">
+              Tu operación bajo control,
+            </p>
+            <p className="text-3xl font-bold leading-snug" style={{ color: '#4ADE80' }}>
+              en tiempo real.
+            </p>
+          </div>
 
-        {/* Footer */}
-        <div className="relative z-20">
-          <p className="text-white/30 text-xs">© 2024 MrBus · Versión 1.0</p>
+          {/* Features abajo */}
+          <div>
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-4">
+              Todo lo que necesitas para operar
+            </p>
+            <div className="space-y-2.5">
+              {features.map((f, i) => {
+                const Icon = f.icon
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.25)' }}>
+                      <Icon className="w-4 h-4" style={{ color: '#4ADE80' }} />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-xs">{f.title}</p>
+                      <p className="text-white/45 text-[10px]">{f.desc}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-white/20 text-[10px] mt-5">© 2024 MrBus · Versión 1.0</p>
+          </div>
+
         </div>
       </div>
 
-      {/* DERECHA — Formulario */}
+      {/* ── DERECHA — Formulario ── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12" style={{ background: '#F2F5F7' }}>
 
         {/* Logo mobile */}
         <div className="lg:hidden mb-8">
-          <Image src="/logo-mrbus.png" alt="MrBus" width={220} height={155} className="object-contain mx-auto" />
+          <Image src="/logo-mrbus.png" alt="MrBus" width={220} height={90} className="object-contain mx-auto" />
         </div>
 
         <div className="w-full max-w-sm">
@@ -114,7 +128,7 @@ export default function LoginPage() {
                 </label>
                 <input type="email"
                   className="w-full px-4 py-3 rounded-xl text-sm text-gray-900 placeholder-gray-400
-                             focus:outline-none focus:ring-2 transition-all"
+                             focus:outline-none focus:ring-2 focus:ring-[#1976D2]/30 transition-all"
                   style={{ background: '#F2F5F7', border: '1.5px solid transparent' }}
                   onFocus={e => e.target.style.borderColor = '#1976D2'}
                   onBlur={e => e.target.style.borderColor = 'transparent'}
@@ -129,7 +143,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input type={showPass ? 'text' : 'password'}
                     className="w-full px-4 py-3 pr-11 rounded-xl text-sm text-gray-900 placeholder-gray-400
-                               focus:outline-none focus:ring-2 transition-all"
+                               focus:outline-none focus:ring-2 focus:ring-[#1976D2]/30 transition-all"
                     style={{ background: '#F2F5F7', border: '1.5px solid transparent' }}
                     onFocus={e => e.target.style.borderColor = '#1976D2'}
                     onBlur={e => e.target.style.borderColor = 'transparent'}
