@@ -48,7 +48,7 @@ export default function LoginPage() {
 
         {/* Overlay multi-capa: oscuro arriba + tono cálido al centro + oscuro abajo */}
         <div className="absolute inset-0 z-10" style={{
-          background: 'linear-gradient(to bottom, rgba(5,10,20,0.80) 0%, rgba(10,15,30,0.50) 25%, rgba(150,75,10,0.30) 50%, rgba(10,15,30,0.65) 75%, rgba(5,8,18,0.92) 100%)'
+          background: 'linear-gradient(145deg, rgba(10,28,60,0.93) 0%, rgba(10,28,60,0.88) 50%, rgba(15,65,130,0.85) 100%)'
         }} />
 
         {/* Contenido sobre la imagen */}
@@ -57,7 +57,7 @@ export default function LoginPage() {
           {/* Logo arriba a la izquierda */}
           <div>
             <Image
-              src="/logo-mrbus.png"
+              src="/logo-silver.png"
               alt="MrBus"
               width={260}
               height={105}
