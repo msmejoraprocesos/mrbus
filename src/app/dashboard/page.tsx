@@ -46,7 +46,7 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 text-sm mt-1">{formatDate(today)}</p>
         </div>
-        <Link href="/trips/new" className="btn-primary"><Plus className="w-4 h-4" />Nuevo viaje</Link>
+        <Link href="/comercial/cotizacion" className="btn-primary"><Plus className="w-4 h-4" />Nueva cotización</Link>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
           <div className="flex flex-col items-center py-16 text-gray-400">
             <MapPin className="w-10 h-10 mb-3 opacity-30" />
             <p>No hay viajes programados para hoy</p>
-            <Link href="/trips/new" className="btn-primary mt-4">Crear viaje</Link>
+            <Link href="/comercial/cotizacion" className="btn-primary mt-4">Nueva cotización</Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
