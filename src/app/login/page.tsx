@@ -57,10 +57,10 @@ export default function LoginPage() {
           {/* Logo arriba a la izquierda */}
           <div>
             <Image
-              src="/logo-silver.png"
+              src="/logo-white.png"
               alt="MrBus"
-              width={260}
-              height={105}
+              width={340}
+              height={138}
               className="object-contain"
               style={{ filter: 'drop-shadow(0 3px 16px rgba(0,0,0,0.7)) brightness(1.05)' }}
               priority
