@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/index'
 import Image from 'next/image'
 import {
   LayoutDashboard, MapPin, Truck, UserCircle, Settings,
@@ -43,7 +43,6 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
     const active = item.href === '/dashboard'
       ? pathname === item.href
       : pathname.startsWith(item.href)
-
     return (
       <Link href={item.href} title={collapsed ? item.label : undefined}
         className={cn(
@@ -52,13 +51,8 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
           active ? 'shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
         )}
         style={active ? { backgroundColor: item.bg, color: item.color } : {}}>
-        <div className={cn(
-          'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all',
-        )}
-          style={active
-            ? { backgroundColor: item.color, color: '#fff' }
-            : { backgroundColor: 'transparent' }
-          }>
+        <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0')}
+          style={active ? { backgroundColor: item.color, color: '#fff' } : { backgroundColor: 'transparent' }}>
           <Icon className="w-3.5 h-3.5" />
         </div>
         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -71,32 +65,19 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
   }
 
   return (
-    <aside className={cn(
-      'hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-200 relative flex-shrink-0',
-    )} style={{ width: collapsed ? 60 : 216 }}>
-
-      {/* Logo */}
-      <div className={cn(
-        'flex items-center border-b border-gray-100 py-3',
-        collapsed ? 'justify-center px-2' : 'px-3'
-      )}>
+    <aside className={cn('hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-200 relative flex-shrink-0')}
+      style={{ width: collapsed ? 60 : 216 }}>
+      <div className={cn('flex items-center border-b border-gray-100 py-3', collapsed ? 'justify-center px-2' : 'px-3')}>
         {collapsed ? (
           <div className="w-8 h-8 rounded-lg bg-[#0F2D52] flex items-center justify-center">
             <span className="text-white font-bold text-xs">MB</span>
           </div>
         ) : (
-          <Image src="/logo-mrbus.png" alt="MrBus" width={144} height={58}
-            className="object-contain" priority />
+          <Image src="/logo-mrbus.png" alt="MrBus" width={144} height={58} className="object-contain" priority />
         )}
       </div>
-
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2 px-1.5 space-y-0.5">
-
-        {/* Dashboard */}
         <NavItem item={NAV[0]} />
-
-        {/* Grupos */}
         {GROUPS.map(group => (
           <div key={group} className="mt-3">
             {!collapsed && (
@@ -112,20 +93,13 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
             </div>
           </div>
         ))}
-
-        {/* Settings */}
         <div className="mt-3 border-t border-gray-100 pt-2">
           <NavItem item={NAV[NAV.length - 1]} />
         </div>
       </nav>
-
-      {/* Colapsar */}
       <button onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full
-                   flex items-center justify-center shadow-sm hover:shadow-md z-10 transition-all">
-        {collapsed
-          ? <ChevronRight className="w-3 h-3 text-gray-400" />
-          : <ChevronLeft className="w-3 h-3 text-gray-400" />}
+        className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md z-10 transition-all">
+        {collapsed ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronLeft className="w-3 h-3 text-gray-400" />}
       </button>
     </aside>
   )

@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, MapPin, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/index'
 
 const TABS = [
   { href:'/driver/home', icon:Home, label:'Inicio' },

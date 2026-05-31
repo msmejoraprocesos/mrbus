@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Search, CheckCircle, Clock, UserX, Loader2 } from 'lucide-react'
-import { BOARDING_STATUS_LABELS, BOARDING_STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS, fullName, formatDateTime, cn } from '@/lib/utils'
+import { BOARDING_STATUS_LABELS, BOARDING_STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS, fullName, formatDateTime, cn } from '@/lib/utils/index'
 
 export default function BoardingMonitor({ tripId, initialPassengers, canBoard }: { tripId: string; initialPassengers: any[]; canBoard: boolean }) {
   const supabase = createClient()

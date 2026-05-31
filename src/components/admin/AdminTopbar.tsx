@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { initials, fullName } from '@/lib/utils'
+import { initials, fullName } from '@/lib/utils/index'
 import { LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 

@@ -5,8 +5,7 @@ export default function Page() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
-            style={{ backgroundColor: '#DCFCE7' }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#DCFCE7' }}>
             🏭
           </div>
           <div>
@@ -16,50 +15,38 @@ export default function Page() {
         </div>
         <div className="flex gap-3 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>0 disponibles
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>3 disponibles
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>2 en desarrollo
+            <span className="w-2 h-2 rounded-full bg-gray-300 inline-block"></span>0 próximamente
           </span>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group"
-          style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }}>
+        <a href="/personal/rutas" className="block rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group" style={{ backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }}>
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-              style={{ backgroundColor: '#DCFCE7' }}>
-              🏭
-            </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-amber-700 bg-amber-50 border-amber-200">🔨 En desarrollo</span>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>🏭</div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-green-700 bg-green-50 border-green-200">✅ Disponible</span>
           </div>
-          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Rutas de Personal</h3>
-          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Convenios, rutas y turnos</p>
-        </div>
-        <div className="rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group"
-          style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }}>
+          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Convenios / Rutas</h3>
+          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Contratos de transporte recurrente</p>
+        </a>
+        <a href="/personal/paradas" className="block rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group" style={{ backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }}>
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-              style={{ backgroundColor: '#DCFCE7' }}>
-              📍
-            </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-amber-700 bg-amber-50 border-amber-200">🔨 En desarrollo</span>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>📍</div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-green-700 bg-green-50 border-green-200">✅ Disponible</span>
           </div>
           <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Control de Paradas</h3>
-          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Paradas y asignación de empleados</p>
-        </div>
-        <div className="rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group"
-          style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }}>
+          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Paradas por ruta y empleados asignados</p>
+        </a>
+        <a href="/personal/asistencia" className="block rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group" style={{ backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }}>
           <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-              style={{ backgroundColor: '#DCFCE7' }}>
-              📊
-            </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-gray-400 bg-gray-50 border-gray-100">⏳ Próximamente</span>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>📊</div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-green-700 bg-green-50 border-green-200">✅ Disponible</span>
           </div>
-          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Reporte de Asistencia</h3>
-          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Reporte mensual para nómina del cliente</p>
-        </div>
+          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Asistencia</h3>
+          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Reporte de abordaje por empleado</p>
+        </a>
       </div>
     </div>
   )

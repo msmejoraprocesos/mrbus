@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Plus, MapPin } from 'lucide-react'
-import { TRIP_STATUS_LABELS, TRIP_STATUS_COLORS, TRIP_TYPE_LABELS, formatDate, formatTime, cn } from '@/lib/utils'
+import { TRIP_STATUS_LABELS, TRIP_STATUS_COLORS, TRIP_TYPE_LABELS, formatDate, formatTime, cn } from '@/lib/utils/index'
 
 export const metadata: Metadata = { title: 'Viajes' }
 export const dynamic = 'force-dynamic'

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Search, Check, Clock, WifiOff, Loader2 } from 'lucide-react'
-import { fullName, cn, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from '@/lib/utils'
+import { fullName, cn, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from '@/lib/utils/index'
 
 const QUEUE_KEY = 'mrbus:offline:queue'
 

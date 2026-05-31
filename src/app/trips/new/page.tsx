@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { TRIP_TYPE_LABELS } from '@/lib/utils'
+import { TRIP_TYPE_LABELS } from '@/lib/utils/index'
 
 export default function NewTripPage() {
   const router = useRouter()

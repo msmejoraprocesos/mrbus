@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Mail, MessageCircle, Plus, Loader2, Clock, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/index'
 
 const STAGES = [
   { key: 'lead',        label: 'Lead',       color: '#6B7280' },
