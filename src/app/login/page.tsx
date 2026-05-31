@@ -41,35 +41,30 @@ export default function LoginPage() {
       {/* IZQUIERDA — Branding */}
       <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 overflow-hidden">
 
-        {/* Hero image de fondo */}
-        <div className="absolute inset-0 z-0">
-          <Image src="/hero.jpg" alt="" fill className="object-cover object-center" priority />
-          {/* Overlay gradiente para legibilidad */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, rgba(10,28,60,0.93) 0%, rgba(10,28,60,0.88) 50%, rgba(15,65,130,0.85) 100%)' }} />
-        </div>
+        {/* Fondo degradado blanco/plateado */}
+        <div className="absolute inset-0 z-0"
+          style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f4f7fa 35%, #e8eef5 65%, #d8e4f0 100%)' }} />
 
-        {/* Patrón punteado */}
-        <div className="absolute inset-0 z-10 opacity-5"
-          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+        {/* Patrón punteado sutil */}
+        <div className="absolute inset-0 z-10 opacity-[0.06]"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #0F2D52 1px, transparent 0)', backgroundSize: '32px 32px' }} />
 
-        {/* Círculos decorativos */}
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-10 z-10" style={{ background: '#00A86B' }} />
-        <div className="absolute top-0 -left-20 w-64 h-64 rounded-full opacity-10 z-10" style={{ background: '#1976D2' }} />
+        {/* Círculos decorativos suaves */}
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full z-10 opacity-20"
+          style={{ background: 'radial-gradient(circle, #1976D2 0%, transparent 70%)' }} />
+        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full z-10 opacity-15"
+          style={{ background: 'radial-gradient(circle, #00A86B 0%, transparent 70%)' }} />
 
         {/* Logo — mix-blend-mode elimina el fondo blanco */}
         <div className="relative z-20">
-          <div className="inline-block rounded-2xl overflow-hidden"
-            style={{ mixBlendMode: 'screen' }}>
-            <Image src="/logo-mrbus.png" alt="MrBus" width={320} height={220}
-              className="object-contain"
-              style={{ filter: 'drop-shadow(0 4px 24px rgba(0,168,107,0.5)) brightness(1.1) contrast(1.05)' }}
+          <Image src="/logo-mrbus.png" alt="MrBus" width={300} height={200}
+              className="object-contain drop-shadow-lg"
               priority />
-          </div>
         </div>
 
         {/* Features */}
         <div className="relative z-20 space-y-5">
-          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-6">
+          <p className="text-[#0F2D52]/60 text-xs font-semibold uppercase tracking-widest mb-6">
             Todo lo que necesitas para operar
           </p>
           {features.map((f, i) => {
@@ -81,8 +76,8 @@ export default function LoginPage() {
                   <Icon className="w-5 h-5" style={{ color: '#00A86B' }} />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-sm leading-tight">{f.title}</p>
-                  <p className="text-white/45 text-xs mt-0.5">{f.desc}</p>
+                  <p className="text-[#0F2D52] font-semibold text-sm leading-tight">{f.title}</p>
+                  <p className="text-[#37474F]/60 text-xs mt-0.5">{f.desc}</p>
                 </div>
               </div>
             )
@@ -91,7 +86,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="relative z-20">
-          <p className="text-white/30 text-xs">© 2024 MrBus · Versión 1.0</p>
+          <p className="text-[#0F2D52]/30 text-xs">© 2024 MrBus · Versión 1.0</p>
         </div>
       </div>
 
