@@ -88,13 +88,13 @@ export default function LoginPage() {
               ].map((s, i) => (
                 <div key={i} className="text-center rounded-xl py-3 px-2"
                   style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <p className="text-white font-bold text-xl leading-tight" style={{ color: '#4ADE80' }}>{s.value}</p>
-                  <p className="text-white/50 text-[10px] mt-0.5 leading-tight">{s.label}</p>
+                  <p className="text-white font-bold text-2xl leading-tight" style={{ color: '#4ADE80' }}>{s.value}</p>
+                  <p className="text-white/70 text-xs mt-0.5 leading-tight">{s.label}</p>
                 </div>
               ))}
             </div>
 
-            <p className="text-white/50 text-[11px] font-bold uppercase tracking-widest mb-3">
+            <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-3">
               Todo lo que necesitas para operar
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -103,13 +103,13 @@ export default function LoginPage() {
                 return (
                   <div key={i} className="flex items-center gap-2.5 rounded-xl p-2.5"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)' }}>
-                      <Icon className="w-4 h-4" style={{ color: '#4ADE80' }} />
+                      <Icon className="w-5 h-5" style={{ color: '#4ADE80' }} />
                     </div>
                     <div>
-                      <p className="text-white font-semibold text-xs leading-tight">{f.title}</p>
-                      <p className="text-white/45 text-[10px] leading-tight mt-0.5">{f.desc}</p>
+                      <p className="text-white font-bold text-sm leading-tight">{f.title}</p>
+                      <p className="text-white/60 text-xs leading-tight mt-0.5">{f.desc}</p>
                     </div>
                   </div>
                 )
