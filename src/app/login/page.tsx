@@ -59,8 +59,8 @@ export default function LoginPage() {
             <Image
               src="/logo-white.png"
               alt="MrBus"
-              width={340}
-              height={138}
+              width={442}
+              height={179}
               className="object-contain"
               style={{ filter: 'drop-shadow(0 3px 16px rgba(0,0,0,0.7)) brightness(1.05)' }}
               priority
