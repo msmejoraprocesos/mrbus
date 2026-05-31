@@ -45,7 +45,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 z-0">
           <Image src="/hero.jpg" alt="" fill className="object-cover object-center" priority />
           {/* Overlay gradiente para legibilidad */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, rgba(30,30,35,0.88) 0%, rgba(50,55,65,0.82) 50%, rgba(80,90,105,0.75) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(120,60,10,0.55) 0%, rgba(80,40,10,0.45) 30%, rgba(20,20,30,0.70) 70%, rgba(10,15,25,0.85) 100%)' }} />
         </div>
 
         {/* Patrón punteado */}
