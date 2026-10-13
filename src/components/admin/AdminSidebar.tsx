@@ -135,7 +135,7 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
         style={{ borderBottomColor: C.border }}
       >
         {!collapsed ? (
-          <Image src="/logo-mrbus.png" alt="MrBus" width={120} height={36} className="object-contain" />
+          <Image src="/logo-white.png" alt="MrBus" width={110} height={32} className="object-contain" />
         ) : (
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1D4ED8' }}>
             <Bus size={16} className="text-white" />
