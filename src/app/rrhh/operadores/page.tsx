@@ -11,6 +11,7 @@ import {
   Shield, Star, TrendingUp, Loader2, AlertCircle, Clock,
   DollarSign, CreditCard, Upload, RefreshCw, BadgeCheck
 } from 'lucide-react'
+import Modal from '@/components/ui/Modal'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -105,12 +106,26 @@ const TABS_DETALLE = [
   { id: 'costo', label: 'Costo operativo' },
 ]
 
+// ─── Tooltip inline ───────────────────────────────────────────────────────────
+
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <span className="relative group inline-flex items-center gap-1">
+      {children}
+      <span className="w-3.5 h-3.5 rounded-full bg-gray-300 text-gray-700 text-[10px] flex items-center justify-center cursor-help font-bold">?</span>
+      <span className="pointer-events-none absolute left-0 top-6 z-50 w-56 rounded-lg bg-gray-800 text-white text-xs px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+        {text}
+      </span>
+    </span>
+  )
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function OperadoresPage() {
   const sb = createClient()
 
-  const [tab, setTab] = useState<'lista' | 'nuevo' | 'detalle'>('lista')
+  const [modalNuevoOpen, setModalNuevoOpen] = useState(false)
   const [tabDetalle, setTabDetalle] = useState('perfil')
   const [operadores, setOperadores] = useState<Operador[]>([])
   const [loading, setLoading] = useState(true)
@@ -267,7 +282,7 @@ export default function OperadoresPage() {
       }
 
       await cargar()
-      setTab('lista')
+      setModalNuevoOpen(false)
       setEditando(false)
       resetForm()
     } finally {
@@ -283,12 +298,11 @@ export default function OperadoresPage() {
   const abrirEditar = (op: Operador) => {
     setForm({ ...op })
     setEditando(true)
-    setTab('nuevo')
+    setModalNuevoOpen(true)
   }
 
   const abrirDetalle = (op: Operador) => {
     setSeleccionado(op)
-    setTab('detalle')
     setTabDetalle('perfil')
     cargarDetalle(op)
   }
@@ -325,36 +339,15 @@ export default function OperadoresPage() {
           <p className="text-sm text-gray-500 mt-0.5">Gestión de conductores y perfil operativo</p>
         </div>
         <button
-          onClick={() => { resetForm(); setEditando(false); setTab('nuevo') }}
+          onClick={() => { resetForm(); setEditando(false); setModalNuevoOpen(true) }}
           className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
         >
           <Plus className="w-4 h-4" /> Nuevo Operador
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
-        {[
-          { id: 'lista', label: 'Operadores' },
-          { id: 'nuevo', label: editando ? 'Editar Operador' : 'Nuevo Operador' },
-          ...(seleccionado ? [{ id: 'detalle', label: `${seleccionado.first_name} ${seleccionado.last_name}` }] : []),
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id as 'lista' | 'nuevo' | 'detalle')}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
-              tab === t.id
-                ? 'border-red-600 text-red-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── TAB LISTA ───────────────────────────────────────────────────────── */}
-      {tab === 'lista' && (
+      {/* ── LISTA ───────────────────────────────────────────────────────── */}
+      {!seleccionado && (
         <div className="space-y-4">
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -485,136 +478,10 @@ export default function OperadoresPage() {
         </div>
       )}
 
-      {/* ── TAB NUEVO / EDITAR ────────────────────────────────────────────────── */}
-      {tab === 'nuevo' && (
-        <div className="max-w-3xl space-y-6">
-          {errores.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex gap-2">
-                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                <ul className="text-sm text-red-700 space-y-0.5">
-                  {errores.map((e, i) => <li key={i}>{e}</li>)}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Datos personales */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <User className="w-5 h-5 text-red-500" />
-              Datos personales
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Campo label="Nombre *" value={form.first_name} onChange={v => setForm(f => ({ ...f, first_name: v }))} />
-              <Campo label="Apellido(s) *" value={form.last_name} onChange={v => setForm(f => ({ ...f, last_name: v }))} />
-              <Campo label="No. Empleado" value={form.employee_number} onChange={v => setForm(f => ({ ...f, employee_number: v }))} placeholder="Auto-generado si se deja vacío" />
-              <Campo label="Teléfono" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} placeholder="10 dígitos" />
-              <Campo label="Email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} type="email" />
-              <Campo label="Fecha contratación" value={form.hire_date} onChange={v => setForm(f => ({ ...f, hire_date: v }))} type="date" />
-              <Campo label="Fecha nacimiento" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select
-                  value={form.status}
-                  onChange={e => setForm(f => ({ ...f, status: e.target.value as Operador['status'] }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                >
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                  <option value="suspended">Suspendido</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <Campo label="Dirección" value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} />
-              </div>
-            </div>
-          </div>
-
-          {/* Documentos oficiales */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-blue-500" />
-              Documentos oficiales
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Campo label="CURP" value={form.curp} onChange={v => setForm(f => ({ ...f, curp: v.toUpperCase() }))} placeholder="18 caracteres" />
-              <Campo label="RFC" value={form.rfc} onChange={v => setForm(f => ({ ...f, rfc: v.toUpperCase() }))} placeholder="13 caracteres" />
-              <Campo label="NSS (IMSS)" value={form.nss} onChange={v => setForm(f => ({ ...f, nss: v }))} />
-              <Campo label="No. Licencia *" value={form.license_number} onChange={v => setForm(f => ({ ...f, license_number: v.toUpperCase() }))} />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de licencia</label>
-                <select
-                  value={form.license_type || 'E'}
-                  onChange={e => setForm(f => ({ ...f, license_type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                >
-                  {LICENSE_TYPES.map(l => <option key={l} value={l}>Tipo {l}</option>)}
-                </select>
-              </div>
-              <Campo label="Vencimiento licencia *" value={form.license_expiry} onChange={v => setForm(f => ({ ...f, license_expiry: v }))} type="date" />
-            </div>
-          </div>
-
-          {/* Perfil económico */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-500" />
-              Perfil de compensación
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <CampoNum label="Salario base mensual" value={form.base_salary} onChange={v => setForm(f => ({ ...f, base_salary: v }))} />
-              <CampoNum label="Tarifa diaria" value={form.daily_rate} onChange={v => setForm(f => ({ ...f, daily_rate: v }))} />
-              <CampoNum label="Bono por viaje" value={form.trip_bonus} onChange={v => setForm(f => ({ ...f, trip_bonus: v }))} />
-            </div>
-          </div>
-
-          {/* Contacto de emergencia */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-            <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <Phone className="w-5 h-5 text-orange-500" />
-              Contacto de emergencia
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Campo label="Nombre" value={form.emergency_contact} onChange={v => setForm(f => ({ ...f, emergency_contact: v }))} />
-              <Campo label="Teléfono" value={form.emergency_phone} onChange={v => setForm(f => ({ ...f, emergency_phone: v }))} />
-            </div>
-          </div>
-
-          {/* Notas */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notas</label>
-            <textarea
-              value={form.notes || ''}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
-              placeholder="Observaciones sobre el operador..."
-            />
-          </div>
-
-          <div className="flex justify-between">
-            <button
-              onClick={() => { setTab('lista'); setEditando(false); resetForm() }}
-              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={guardar}
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {saving ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear operador'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB DETALLE ──────────────────────────────────────────────────────── */}
-      {tab === 'detalle' && seleccionado && (
+      {/* ── DETALLE ──────────────────────────────────────────────────────── */}
+      {seleccionado && (
         <div className="space-y-4">
+          <button onClick={() => setSeleccionado(null)} className="text-sm text-gray-500 hover:text-gray-700">← Operadores</button>
           {/* Header operador */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <div className="flex items-start justify-between">
@@ -945,7 +812,7 @@ export default function OperadoresPage() {
             </div>
           )}
 
-          {/* Documentos tab (placeholder para futura expansión) */}
+          {/* Documentos tab */}
           {tabDetalle === 'documentos' && (
             <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-gray-400">
               <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -955,6 +822,153 @@ export default function OperadoresPage() {
           )}
         </div>
       )}
+
+      {/* MODAL: Nuevo / Editar Operador */}
+      <Modal
+        open={modalNuevoOpen}
+        onClose={() => { setModalNuevoOpen(false); setEditando(false); resetForm() }}
+        title={editando ? 'Editar Operador' : 'Nuevo Operador'}
+        size="xl"
+        footer={
+          <>
+            <button
+              onClick={() => { setModalNuevoOpen(false); setEditando(false); resetForm() }}
+              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={guardar}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {saving ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear operador'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-6">
+          {errores.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <ul className="text-sm text-red-700 space-y-0.5">
+                  {errores.map((e, i) => <li key={i}>{e}</li>)}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Datos personales */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <User className="w-4 h-4 text-red-500" />
+              Datos personales
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Campo label="Nombre *" value={form.first_name} onChange={v => setForm(f => ({ ...f, first_name: v }))} />
+              <Campo label="Apellido(s) *" value={form.last_name} onChange={v => setForm(f => ({ ...f, last_name: v }))} />
+              <Campo label="No. Empleado" value={form.employee_number} onChange={v => setForm(f => ({ ...f, employee_number: v }))} placeholder="Auto-generado si se deja vacío" />
+              <Campo label="Teléfono" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} placeholder="10 dígitos" />
+              <Campo label="Email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} type="email" />
+              <Campo label="Fecha contratación" value={form.hire_date} onChange={v => setForm(f => ({ ...f, hire_date: v }))} type="date" />
+              <Campo label="Fecha nacimiento" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Tooltip text="Define la modalidad laboral y prestaciones correspondientes">Tipo contrato</Tooltip>
+                </label>
+                <select
+                  value={form.status}
+                  onChange={e => setForm(f => ({ ...f, status: e.target.value as Operador['status'] }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                >
+                  <option value="active">Activo</option>
+                  <option value="inactive">Inactivo</option>
+                  <option value="suspended">Suspendido</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <Campo label="Dirección" value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} />
+              </div>
+            </div>
+          </div>
+
+          {/* Documentos oficiales */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 border-t pt-4">
+              <CreditCard className="w-4 h-4 text-blue-500" />
+              Documentos oficiales
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Campo label="CURP" value={form.curp} onChange={v => setForm(f => ({ ...f, curp: v.toUpperCase() }))} placeholder="18 caracteres" />
+              <Campo label="RFC" value={form.rfc} onChange={v => setForm(f => ({ ...f, rfc: v.toUpperCase() }))} placeholder="13 caracteres" />
+              <Campo label="NSS (IMSS)" value={form.nss} onChange={v => setForm(f => ({ ...f, nss: v }))} />
+              <Campo label="No. Licencia *" value={form.license_number} onChange={v => setForm(f => ({ ...f, license_number: v.toUpperCase() }))} />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Tooltip text="Tipo de licencia federal requerida para operar el vehículo asignado">Licencia</Tooltip>
+                </label>
+                <select
+                  value={form.license_type || 'E'}
+                  onChange={e => setForm(f => ({ ...f, license_type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                >
+                  {LICENSE_TYPES.map(l => <option key={l} value={l}>Tipo {l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Tooltip text="Se enviará alerta 30 días antes del vencimiento">Vence licencia *</Tooltip>
+                </label>
+                <input
+                  type="date"
+                  value={form.license_expiry || ''}
+                  onChange={e => setForm(f => ({ ...f, license_expiry: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Perfil económico */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 border-t pt-4">
+              <DollarSign className="w-4 h-4 text-green-500" />
+              Perfil de compensación
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CampoNum label="Salario base mensual" value={form.base_salary} onChange={v => setForm(f => ({ ...f, base_salary: v }))} />
+              <CampoNum label="Tarifa diaria" value={form.daily_rate} onChange={v => setForm(f => ({ ...f, daily_rate: v }))} />
+              <CampoNum label="Bono por viaje" value={form.trip_bonus} onChange={v => setForm(f => ({ ...f, trip_bonus: v }))} />
+            </div>
+          </div>
+
+          {/* Contacto de emergencia */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 border-t pt-4">
+              <Phone className="w-4 h-4 text-orange-500" />
+              Contacto de emergencia
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Campo label="Nombre" value={form.emergency_contact} onChange={v => setForm(f => ({ ...f, emergency_contact: v }))} />
+              <Campo label="Teléfono" value={form.emergency_phone} onChange={v => setForm(f => ({ ...f, emergency_phone: v }))} />
+            </div>
+          </div>
+
+          {/* Notas */}
+          <div className="border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notas</label>
+            <textarea
+              value={form.notes || ''}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+              placeholder="Observaciones sobre el operador..."
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

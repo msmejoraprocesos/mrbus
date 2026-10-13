@@ -3,8 +3,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fmt, fmtDate, cn } from '@/lib/utils/index'
 import { auditLog, getNextFolio } from '@/lib/audit'
-import { Plus, Search, TrendingUp, AlertTriangle, CheckCircle, ChevronRight, Mail, Phone } from 'lucide-react'
+import { Plus, Search, TrendingUp, AlertTriangle, CheckCircle, ChevronRight, Mail, Phone, List, Kanban } from 'lucide-react'
 import { toast } from 'sonner'
+import Modal from '@/components/ui/Modal'
 
 const supabase = createClient()
 
@@ -36,6 +37,14 @@ const STATUS_COLOR: Record<string,string> = {
   cancelled: 'bg-slate-100 text-slate-500',
 }
 
+const KANBAN_COLS: { key: CXC['status']; label: string; header: string; bg: string }[] = [
+  { key: 'pending',   label: 'Pendiente',  header: 'bg-slate-100',  bg: 'bg-slate-50/50' },
+  { key: 'partial',   label: 'Parcial',    header: 'bg-blue-100',   bg: 'bg-blue-50/30' },
+  { key: 'overdue',   label: 'Vencido',    header: 'bg-red-100',    bg: 'bg-red-50/50' },
+  { key: 'paid',      label: 'Cobrado',    header: 'bg-green-100',  bg: 'bg-green-50/30' },
+  { key: 'cancelled', label: 'Cancelado',  header: 'bg-gray-100',   bg: 'bg-gray-50/30' },
+]
+
 function emptyForm(): Partial<CXC> {
   return {
     client_name: '', client_rfc: '', client_email: '', client_phone: '',
@@ -56,8 +65,23 @@ function computeStatus(r: any): CXC['status'] {
   return 'pending'
 }
 
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <span className="relative group inline-flex items-center gap-1">
+      {children}
+      <span className="w-3.5 h-3.5 rounded-full bg-slate-300 text-slate-700 text-[10px] flex items-center justify-center cursor-help font-bold">?</span>
+      <span className="pointer-events-none absolute left-0 top-6 z-50 w-52 rounded-lg bg-slate-800 text-white text-xs px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+        {text}
+      </span>
+    </span>
+  )
+}
+
 export default function CXCPage() {
-  const [tab, setTab] = useState<'lista'|'nueva'|'detalle'|'cobro'>('lista')
+  const [view, setView] = useState<'lista'|'kanban'>('lista')
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [nuevaOpen, setNuevaOpen] = useState(false)
+  const [cobroOpen, setCobroOpen] = useState(false)
   const [cxcs, setCXCs] = useState<CXC[]>([])
   const [cobros, setCobros] = useState<Cobro[]>([])
   const [cuentas, setCuentas] = useState<BankAccount[]>([])
@@ -140,7 +164,7 @@ export default function CXCPage() {
       await auditLog({ action: 'INSERT', module: 'CXC', table_name: 'accounts_receivable', record_id: data.id, record_folio: folio })
       toast.success(`CXC ${folio} registrada`)
       setForm(emptyForm())
-      setTab('lista')
+      setNuevaOpen(false)
       load()
     } catch (e: any) {
       toast.error(e.message ?? 'Error')
@@ -168,7 +192,6 @@ export default function CXCPage() {
       if (newStatus === 'paid') updatePayload.payment_date = new Date().toISOString().slice(0,10)
       await supabase.from('accounts_receivable').update(updatePayload).eq('id', selected.id)
 
-      // Credit to bank account
       if (cobroForm.cuenta_destino) {
         const cuenta = cuentas.find(c => c.id === cobroForm.cuenta_destino)
         if (cuenta) {
@@ -185,7 +208,7 @@ export default function CXCPage() {
       await auditLog({ action: 'UPDATE', module: 'CXC', table_name: 'accounts_receivable', record_id: selected.id, record_folio: selected.folio })
       toast.success('Cobro registrado')
       setCobroForm({ monto: 0, metodo: 'Transferencia', referencia: '', cuenta_destino: '', notas: '' })
-      setTab('lista')
+      setCobroOpen(false)
       setSelected(null)
       load()
     } catch (e: any) {
@@ -194,6 +217,23 @@ export default function CXCPage() {
   }
 
   const cobrosDe = selected ? cobros.filter(c => c.cxc_id === selected.id) : []
+
+  function openCobro(c: CXC) {
+    setSelected(c)
+    setCobroForm({ monto: c.amount - c.paid_amount, metodo: 'Transferencia', referencia: '', cuenta_destino: cuentas[0]?.id ?? '', notas: '' })
+    setCobroOpen(true)
+  }
+
+  function openDetail(c: CXC) {
+    setSelected(c)
+    setDetailOpen(true)
+  }
+
+  // Days overdue helper
+  function daysOverdue(due_date: string) {
+    const diff = Math.floor((hoy.getTime() - new Date(due_date).getTime()) / 86400000)
+    return diff > 0 ? diff : 0
+  }
 
   return (
     <div className="space-y-5">
@@ -206,7 +246,7 @@ export default function CXCPage() {
             <p className="text-sm text-slate-500">{cxcs.length} registros</p>
           </div>
         </div>
-        <button onClick={() => { setForm(emptyForm()); setTab('nueva') }}
+        <button onClick={() => { setForm(emptyForm()); setNuevaOpen(true) }}
           className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700">
           <Plus size={15} /> Nueva CXC
         </button>
@@ -227,23 +267,22 @@ export default function CXCPage() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit text-sm">
-        {(['lista','nueva'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={cn('px-4 py-1.5 rounded-md font-medium transition-colors capitalize',
-              tab === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
-            {t === 'lista' ? 'Lista CXC' : 'Nueva CXC'}
+      {/* View toggle + filters */}
+      <div className="flex gap-2 flex-wrap items-center">
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 text-sm">
+          <button onClick={() => setView('lista')}
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-colors',
+              view === 'lista' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+            <List size={14} /> Lista
           </button>
-        ))}
-        {selected && tab === 'detalle' && <button className="px-4 py-1.5 rounded-md font-medium bg-white text-slate-800 shadow-sm">Detalle</button>}
-        {selected && tab === 'cobro' && <button className="px-4 py-1.5 rounded-md font-medium bg-white text-teal-700 shadow-sm">Registrar Cobro</button>}
-      </div>
-
-      {/* LISTA */}
-      {tab === 'lista' && (
-        <div className="space-y-3">
-          <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setView('kanban')}
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-colors',
+              view === 'kanban' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+            <Kanban size={14} /> Kanban
+          </button>
+        </div>
+        {view === 'lista' && (
+          <>
             <div className="relative flex-1 min-w-48">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente, folio, concepto…"
@@ -254,202 +293,201 @@ export default function CXCPage() {
               <option value="todos">Todos</option>
               {Object.entries(STATUS_LABEL).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-          </div>
+          </>
+        )}
+      </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-semibold text-slate-400 uppercase bg-teal-50 border-b">
-                    {['Folio','Cliente','Tipo','Concepto','Monto','Saldo','Vence','Estado','Acciones'].map(h => (
-                      <th key={h} className="px-4 py-3">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filtered.length === 0 ? (
-                    <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-400">Sin registros</td></tr>
-                  ) : filtered.map(c => {
-                    const saldo = c.amount - c.paid_amount
-                    return (
-                      <tr key={c.id} className="hover:bg-slate-50/50 cursor-pointer"
-                        onClick={() => { setSelected(c); setTab('detalle') }}>
-                        <td className="px-4 py-3 font-mono text-xs text-teal-700 font-semibold">{c.folio}</td>
-                        <td className="px-4 py-3 font-semibold text-slate-900">{c.client_name}</td>
-                        <td className="px-4 py-3 text-xs text-slate-500">{c.document_type}</td>
-                        <td className="px-4 py-3 text-slate-600 max-w-40 truncate">{c.concepto}</td>
-                        <td className="px-4 py-3 font-semibold">{fmt(c.amount)}</td>
-                        <td className="px-4 py-3 font-bold text-amber-600">{saldo > 0 ? fmt(saldo) : '—'}</td>
-                        <td className="px-4 py-3 text-xs text-slate-500">
-                          <span className={cn(c.status === 'overdue' && 'text-red-600 font-semibold')}>{fmtDate(c.due_date)}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold', STATUS_COLOR[c.status])}>
-                            {STATUS_LABEL[c.status]}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                          {['pending','partial','overdue'].includes(c.status) && (
-                            <button onClick={() => { setSelected(c); setCobroForm({...cobroForm, monto: c.amount - c.paid_amount, cuenta_destino: cuentas[0]?.id ?? ''}); setTab('cobro') }}
-                              className="px-2 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700 font-medium">
-                              Cobrar
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+      {/* LISTA */}
+      {view === 'lista' && (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-slate-400 uppercase bg-teal-50 border-b">
+                  {['Folio','Cliente','Tipo','Concepto','Monto','Saldo','Vence','Estado','Acciones'].map(h => (
+                    <th key={h} className="px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-400">Sin registros</td></tr>
+                ) : filtered.map(c => {
+                  const saldo = c.amount - c.paid_amount
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-50/50 cursor-pointer"
+                      onClick={() => openDetail(c)}>
+                      <td className="px-4 py-3 font-mono text-xs text-teal-700 font-semibold">{c.folio}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-900">{c.client_name}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{c.document_type}</td>
+                      <td className="px-4 py-3 text-slate-600 max-w-40 truncate">{c.concepto}</td>
+                      <td className="px-4 py-3 font-semibold">{fmt(c.amount)}</td>
+                      <td className="px-4 py-3 font-bold text-amber-600">{saldo > 0 ? fmt(saldo) : '—'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500">
+                        <span className={cn(c.status === 'overdue' && 'text-red-600 font-semibold')}>{fmtDate(c.due_date)}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold', STATUS_COLOR[c.status])}>
+                          {STATUS_LABEL[c.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                        {['pending','partial','overdue'].includes(c.status) && (
+                          <button onClick={() => openCobro(c)}
+                            className="px-2 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700 font-medium">
+                            Cobrar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* NUEVA */}
-      {tab === 'nueva' && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 max-w-2xl">
-          <h2 className="text-base font-semibold text-slate-800 mb-5">Nueva Cuenta por Cobrar</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Cliente *</label>
-              <input value={form.client_name ?? ''} onChange={e => setForm({...form, client_name: e.target.value})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">RFC</label>
-              <input value={form.client_rfc ?? ''} onChange={e => setForm({...form, client_rfc: e.target.value.toUpperCase()})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Tipo documento</label>
-              <select value={form.document_type} onChange={e => setForm({...form, document_type: e.target.value})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                {DOC_TIPOS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
-              <input type="email" value={form.client_email ?? ''} onChange={e => setForm({...form, client_email: e.target.value})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Teléfono</label>
-              <input value={form.client_phone ?? ''} onChange={e => setForm({...form, client_phone: e.target.value})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Concepto *</label>
-              <input value={form.concepto ?? ''} onChange={e => setForm({...form, concepto: e.target.value})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Monto *</label>
-              <input type="number" min="0" step="0.01" value={form.amount ?? ''} onChange={e => setForm({...form, amount: parseFloat(e.target.value)||0})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Fecha vencimiento *</label>
-              <input type="date" value={form.due_date ?? ''} onChange={e => setForm({...form, due_date: e.target.value})}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
-            </div>
+      {/* KANBAN */}
+      {view === 'kanban' && (
+        <div className="overflow-x-auto pb-2">
+          <div className="flex gap-3 min-w-max">
+            {KANBAN_COLS.map(col => {
+              const cards = cxcs.filter(c => c.status === col.key)
+              return (
+                <div key={col.key} className={cn('w-64 rounded-xl border border-slate-200 overflow-hidden flex flex-col', col.bg)}>
+                  <div className={cn('px-3 py-2.5 flex items-center justify-between', col.header)}>
+                    <span className="text-xs font-semibold text-slate-700">{col.label}</span>
+                    <span className="text-xs font-bold text-slate-600 bg-white/70 rounded-full px-2 py-0.5">{cards.length}</span>
+                  </div>
+                  <div className="p-2 space-y-2 flex-1">
+                    {cards.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-4">Sin registros</p>
+                    )}
+                    {cards.map(c => {
+                      const saldo = c.amount - c.paid_amount
+                      const overdueDays = c.status === 'overdue' ? daysOverdue(c.due_date) : 0
+                      return (
+                        <div key={c.id} onClick={() => openDetail(c)}
+                          className="bg-white rounded-lg border border-slate-100 p-3 shadow-sm cursor-pointer hover:shadow-md hover:border-teal-200 transition-all space-y-1.5">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-mono text-xs text-teal-700 font-semibold">{c.folio}</span>
+                            {overdueDays > 0 && (
+                              <span className="text-[10px] bg-red-100 text-red-700 rounded-full px-1.5 py-0.5 font-bold">{overdueDays}d</span>
+                            )}
+                          </div>
+                          <p className="text-xs font-semibold text-slate-800 leading-tight truncate">{c.client_name}</p>
+                          <p className="text-sm font-bold text-slate-900">{fmt(saldo > 0.01 ? saldo : c.amount)}</p>
+                          <p className="text-[10px] text-slate-400">Vence {fmtDate(c.due_date)}</p>
+                          {['pending','partial','overdue'].includes(c.status) && (
+                            <button
+                              onClick={e => { e.stopPropagation(); openCobro(c) }}
+                              className="w-full mt-1 py-1 text-[10px] bg-teal-600 text-white rounded font-semibold hover:bg-teal-700">
+                              Registrar cobro
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-          <div className="flex gap-3 mt-5">
+        </div>
+      )}
+
+      {/* MODAL: Nueva CXC */}
+      <Modal open={nuevaOpen} onClose={() => setNuevaOpen(false)} title="Nueva Cuenta por Cobrar" size="lg"
+        footer={
+          <>
+            <button onClick={() => setNuevaOpen(false)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200">
+              Cancelar
+            </button>
             <button onClick={guardar} disabled={loading}
               className="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50">
               {loading ? 'Guardando…' : 'Registrar CXC'}
             </button>
-            <button onClick={() => setTab('lista')}
-              className="px-5 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200">
+          </>
+        }>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-slate-600 mb-1">Cliente *</label>
+            <input value={form.client_name ?? ''} onChange={e => setForm({...form, client_name: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">RFC</label>
+            <input value={form.client_rfc ?? ''} onChange={e => setForm({...form, client_rfc: e.target.value.toUpperCase()})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Tipo documento</label>
+            <select value={form.document_type} onChange={e => setForm({...form, document_type: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+              {DOC_TIPOS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+            <input type="email" value={form.client_email ?? ''} onChange={e => setForm({...form, client_email: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Teléfono</label>
+            <input value={form.client_phone ?? ''} onChange={e => setForm({...form, client_phone: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              <Tooltip text="Descripción del servicio o factura que origina este cobro">Concepto *</Tooltip>
+            </label>
+            <input value={form.concepto ?? ''} onChange={e => setForm({...form, concepto: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              <Tooltip text="Monto total de la factura o servicio a cobrar">Monto *</Tooltip>
+            </label>
+            <input type="number" min="0" step="0.01" value={form.amount ?? ''} onChange={e => setForm({...form, amount: parseFloat(e.target.value)||0})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              <Tooltip text="Fecha en que se vence el plazo de pago acordado con el cliente">Fecha límite *</Tooltip>
+            </label>
+            <input type="date" value={form.due_date ?? ''} onChange={e => setForm({...form, due_date: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: Cobro (sm) */}
+      <Modal open={cobroOpen} onClose={() => { setCobroOpen(false); setSelected(null) }}
+        title="Registrar Cobro" subtitle={selected ? `${selected.folio} · ${selected.client_name}` : undefined} size="sm"
+        footer={
+          <>
+            <button onClick={() => { setCobroOpen(false); setSelected(null) }}
+              className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200">
               Cancelar
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* DETALLE */}
-      {tab === 'detalle' && selected && (
-        <div className="space-y-4 max-w-2xl">
-          <div className="flex items-center gap-2 mb-2">
-            <button onClick={() => setTab('lista')} className="text-sm text-slate-500 hover:text-slate-700">← Lista</button>
-            <ChevronRight size={14} className="text-slate-400" />
-            <span className="text-sm font-semibold text-slate-700">{selected.folio}</span>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">{selected.client_name}</h2>
-                <div className="flex gap-3 mt-1 text-xs text-slate-500">
-                  {selected.client_rfc && <span className="font-mono">{selected.client_rfc}</span>}
-                  {selected.client_email && <span className="flex items-center gap-1"><Mail size={10} />{selected.client_email}</span>}
-                  {selected.client_phone && <span className="flex items-center gap-1"><Phone size={10} />{selected.client_phone}</span>}
-                </div>
-              </div>
-              <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold', STATUS_COLOR[selected.status])}>
-                {STATUS_LABEL[selected.status]}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {[
-                ['Folio', selected.folio],
-                ['Tipo', selected.document_type],
-                ['Concepto', selected.concepto],
-                ['Monto', fmt(selected.amount)],
-                ['Cobrado', fmt(selected.paid_amount)],
-                ['Saldo', fmt(selected.amount - selected.paid_amount)],
-                ['Emisión', fmtDate(selected.issue_date)],
-                ['Vencimiento', fmtDate(selected.due_date)],
-                ...(selected.trip_number ? [['Viaje', selected.trip_number]] : []),
-                ...(selected.contract_number ? [['Contrato', selected.contract_number]] : []),
-              ].map(([k,v]) => (
-                <div key={k}>
-                  <span className="text-xs text-slate-400">{k}</span>
-                  <p className="font-medium text-slate-800">{v}</p>
-                </div>
-              ))}
-            </div>
-            {['pending','partial','overdue'].includes(selected.status) && (
-              <button onClick={() => { setCobroForm({...cobroForm, monto: selected.amount - selected.paid_amount, cuenta_destino: cuentas[0]?.id ?? ''}); setTab('cobro') }}
-                className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700">
-                <TrendingUp size={14} /> Registrar Cobro
-              </button>
-            )}
-          </div>
-          {cobrosDe.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Historial de cobros</h3>
-              {cobrosDe.map(co => (
-                <div key={co.id} className="flex justify-between py-2 border-b border-slate-50 last:border-0 text-sm">
-                  <div>
-                    <p className="font-semibold text-slate-800">{fmt(co.monto)}</p>
-                    <p className="text-xs text-slate-500">{fmtDate(co.fecha)} · {co.metodo} · {co.referencia || 'Sin ref'}</p>
-                  </div>
-                  <CheckCircle size={16} className="text-green-500 mt-0.5" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* COBRO */}
-      {tab === 'cobro' && selected && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 max-w-lg">
-          <div className="flex items-center gap-2 mb-5">
-            <button onClick={() => setTab('lista')} className="text-sm text-slate-500 hover:text-slate-700">← Lista</button>
-            <ChevronRight size={14} className="text-slate-400" />
-            <span className="text-sm font-semibold text-slate-700">Cobro · {selected.folio}</span>
-          </div>
-          <div className="bg-slate-50 rounded-lg p-3 mb-5 text-sm">
-            <p className="font-semibold">{selected.client_name}</p>
-            <p className="text-slate-500">{selected.concepto}</p>
-            <div className="flex gap-6 mt-2">
-              <div><span className="text-xs text-slate-400">Total:</span> <span className="font-bold">{fmt(selected.amount)}</span></div>
-              <div><span className="text-xs text-slate-400">Cobrado:</span> <span className="font-bold text-green-700">{fmt(selected.paid_amount)}</span></div>
-              <div><span className="text-xs text-slate-400">Saldo:</span> <span className="font-bold text-amber-600">{fmt(selected.amount - selected.paid_amount)}</span></div>
-            </div>
-          </div>
+            <button onClick={registrarCobro} disabled={loading}
+              className="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50">
+              {loading ? 'Procesando…' : 'Aplicar Cobro'}
+            </button>
+          </>
+        }>
+        {selected && (
           <div className="space-y-4">
+            <div className="bg-slate-50 rounded-lg p-3 text-sm">
+              <p className="text-slate-500 text-xs">{selected.concepto}</p>
+              <div className="flex gap-4 mt-2">
+                <div><span className="text-xs text-slate-400">Total:</span> <span className="font-bold">{fmt(selected.amount)}</span></div>
+                <div><span className="text-xs text-slate-400">Cobrado:</span> <span className="font-bold text-green-700">{fmt(selected.paid_amount)}</span></div>
+                <div><span className="text-xs text-slate-400">Saldo:</span> <span className="font-bold text-amber-600">{fmt(selected.amount - selected.paid_amount)}</span></div>
+              </div>
+            </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Monto a cobrar *</label>
               <input type="number" min="0" step="0.01" value={cobroForm.monto || ''}
@@ -477,18 +515,65 @@ export default function CXCPage() {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
             </div>
           </div>
-          <div className="flex gap-3 mt-5">
-            <button onClick={registrarCobro} disabled={loading}
-              className="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50">
-              {loading ? 'Procesando…' : 'Aplicar Cobro'}
-            </button>
-            <button onClick={() => setTab('lista')}
-              className="px-5 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200">
-              Cancelar
-            </button>
+        )}
+      </Modal>
+
+      {/* MODAL: Detalle */}
+      <Modal open={detailOpen} onClose={() => { setDetailOpen(false); setSelected(null) }}
+        title={selected?.folio ?? 'Detalle'} subtitle={selected?.client_name} size="lg">
+        {selected && (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex gap-3 text-xs text-slate-500 flex-wrap">
+                {selected.client_rfc && <span className="font-mono">{selected.client_rfc}</span>}
+                {selected.client_email && <span className="flex items-center gap-1"><Mail size={10} />{selected.client_email}</span>}
+                {selected.client_phone && <span className="flex items-center gap-1"><Phone size={10} />{selected.client_phone}</span>}
+              </div>
+              <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold', STATUS_COLOR[selected.status])}>
+                {STATUS_LABEL[selected.status]}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {([
+                ['Tipo', selected.document_type],
+                ['Concepto', selected.concepto],
+                ['Monto', fmt(selected.amount)],
+                ['Cobrado', fmt(selected.paid_amount)],
+                ['Saldo', fmt(selected.amount - selected.paid_amount)],
+                ['Emisión', fmtDate(selected.issue_date)],
+                ['Vencimiento', fmtDate(selected.due_date)],
+                ...(selected.trip_number ? [['Viaje', selected.trip_number]] : []),
+                ...(selected.contract_number ? [['Contrato', selected.contract_number]] : []),
+              ] as [string,string][]).map(([k,v]) => (
+                <div key={k}>
+                  <span className="text-xs text-slate-400">{k}</span>
+                  <p className="font-medium text-slate-800">{v}</p>
+                </div>
+              ))}
+            </div>
+            {['pending','partial','overdue'].includes(selected.status) && (
+              <button onClick={() => { setDetailOpen(false); openCobro(selected) }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700">
+                <TrendingUp size={14} /> Registrar Cobro
+              </button>
+            )}
+            {cobrosDe.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Historial de cobros</h3>
+                {cobrosDe.map(co => (
+                  <div key={co.id} className="flex justify-between py-2 border-b border-slate-50 last:border-0 text-sm">
+                    <div>
+                      <p className="font-semibold text-slate-800">{fmt(co.monto)}</p>
+                      <p className="text-xs text-slate-500">{fmtDate(co.fecha)} · {co.metodo} · {co.referencia || 'Sin ref'}</p>
+                    </div>
+                    <CheckCircle size={16} className="text-green-500 mt-0.5" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   )
 }
