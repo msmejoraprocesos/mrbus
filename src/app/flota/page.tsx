@@ -1,31 +1,47 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { Bus, Fuel, Wrench, Circle, ChevronRight, AlertTriangle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Bus, Fuel, Wrench, Circle, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Flota — MrBus' }
+export default function Page() {
+  const [loading, setLoading] = useState(true)
+  const [activeVehicles, setActiveVehicles] = useState(0)
+  const [blockedVehicles, setBlockedVehicles] = useState(0)
+  const [openMaint, setOpenMaint] = useState(0)
+  const [blockingMaint, setBlockingMaint] = useState(0)
+  const [wornTires, setWornTires] = useState(0)
+  const [tiresCount, setTiresCount] = useState(0)
+  const [fuelThisWeek, setFuelThisWeek] = useState(0)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    setLoading(true)
+    const supabase = createClient()
 
-  const [vehiclesRes, fuelRes, maintRes, tiresRes] = await Promise.all([
-    supabase.from('vehicles').select('id, status, make, model, license_plate').order('license_plate'),
-    supabase.from('fuel_loads').select('id, created_at, total_cost').order('created_at', { ascending: false }).limit(5),
-    supabase.from('maintenance_orders').select('id, status, blocks_vehicle').eq('status', 'open'),
-    supabase.from('tire_inventory').select('id, life_pct, status').eq('status', 'active'),
-  ])
+    const [vehiclesRes, fuelRes, maintRes, tiresRes] = await Promise.all([
+      supabase.from('vehicles').select('id, status, make, model, license_plate').order('license_plate'),
+      supabase.from('fuel_loads').select('id, created_at, total_cost').order('created_at', { ascending: false }).limit(5),
+      supabase.from('maintenance_orders').select('id, status, blocks_vehicle').eq('status', 'open'),
+      supabase.from('tire_inventory').select('id, life_pct, status').eq('status', 'active'),
+    ])
 
-  const vehicles = vehiclesRes.data ?? []
-  const fuelLoads = fuelRes.data ?? []
-  const maintOrders = maintRes.data ?? []
-  const tires = tiresRes.data ?? []
+    const vehicles = (vehiclesRes.data ?? []) as unknown as { id: string; status: string }[]
+    const fuelLoads = (fuelRes.data ?? []) as unknown as { id: string; total_cost: number | null }[]
+    const maintOrders = (maintRes.data ?? []) as unknown as { id: string; status: string; blocks_vehicle: boolean }[]
+    const tires = (tiresRes.data ?? []) as unknown as { id: string; life_pct: number | null; status: string }[]
 
-  const activeVehicles = vehicles.filter(v => v.status === 'active').length
-  const blockedVehicles = vehicles.filter(v => v.status === 'maintenance').length
-  const openMaint = maintOrders.length
-  const blockingMaint = maintOrders.filter(m => m.blocks_vehicle).length
-  const wornTires = tires.filter(t => (t.life_pct ?? 0) > 80).length
-  const fuelThisWeek = fuelLoads.reduce((s, f) => s + (f.total_cost ?? 0), 0)
+    setActiveVehicles(vehicles.filter(v => v.status === 'active').length)
+    setBlockedVehicles(vehicles.filter(v => v.status === 'maintenance').length)
+    setOpenMaint(maintOrders.length)
+    setBlockingMaint(maintOrders.filter(m => m.blocks_vehicle).length)
+    setTiresCount(tires.length)
+    setWornTires(tires.filter(t => (t.life_pct ?? 0) > 80).length)
+    setFuelThisWeek(fuelLoads.reduce((s, f) => s + (f.total_cost ?? 0), 0))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n)
 
@@ -67,17 +83,24 @@ export default async function Page() {
       icon: Circle,
       color: '#16A34A',
       bg: '#F0FDF4',
-      stats: [`${tires.length} activas`, wornTires > 0 ? `${wornTires} con desgaste >80%` : 'Sin alertas de desgaste'],
+      stats: [`${tiresCount} activas`, wornTires > 0 ? `${wornTires} con desgaste >80%` : 'Sin alertas de desgaste'],
       alert: wornTires > 0,
     },
   ]
 
+  if (loading) return <div className="p-8 text-slate-500 text-sm">Cargando...</div>
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Flota</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Gestión de unidades, combustible, mantenimiento y llantas</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Flota</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Gestión de unidades, combustible, mantenimiento y llantas</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+          <RefreshCw size={13} /> Actualizar
+        </button>
       </div>
 
       {/* KPI strip */}

@@ -1,35 +1,56 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { Bus, CalendarDays, Navigation, Map, Radio, Gauge, ChevronRight, AlertTriangle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Bus, CalendarDays, Navigation, Map, Radio, Gauge, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Operación — MrBus' }
+export default function Page() {
+  const [loading, setLoading] = useState(true)
+  const [todayTripsCount, setTodayTripsCount] = useState(0)
+  const [weekTripsCount, setWeekTripsCount] = useState(0)
+  const [activeTripsCount, setActiveTripsCount] = useState(0)
+  const [activeVehiclesCount, setActiveVehiclesCount] = useState(0)
+  const [activeDriversCount, setActiveDriversCount] = useState(0)
+  const [hasRoutes, setHasRoutes] = useState(false)
+  const [unassigned, setUnassigned] = useState(0)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    setLoading(true)
+    const supabase = createClient()
 
-  const todayStr = new Date().toISOString().slice(0, 10)
-  const in7 = new Date()
-  in7.setDate(in7.getDate() + 7)
-  const in7Str = in7.toISOString().slice(0, 10)
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const in7 = new Date()
+    in7.setDate(in7.getDate() + 7)
+    const in7Str = in7.toISOString().slice(0, 10)
 
-  const [todayTripsRes, weekTripsRes, activeTripsRes, vehiclesRes, driversRes, routesRes] = await Promise.all([
-    supabase.from('trips').select('id, status').eq('departure_date', todayStr),
-    supabase.from('trips').select('id').gte('departure_date', todayStr).lte('departure_date', in7Str),
-    supabase.from('trips').select('id, status').in('status', ['boarding', 'in_transit']),
-    supabase.from('vehicles').select('id, status').eq('status', 'active'),
-    supabase.from('drivers').select('id, status').eq('status', 'active'),
-    supabase.from('saved_routes').select('id').limit(1),
-  ])
+    const [todayTripsRes, weekTripsRes, activeTripsRes, vehiclesRes, driversRes, routesRes] = await Promise.all([
+      supabase.from('trips').select('id, status').eq('departure_date', todayStr),
+      supabase.from('trips').select('id').gte('departure_date', todayStr).lte('departure_date', in7Str),
+      supabase.from('trips').select('id, status').in('status', ['boarding', 'in_transit']),
+      supabase.from('vehicles').select('id, status').eq('status', 'active'),
+      supabase.from('drivers').select('id, status').eq('status', 'active'),
+      supabase.from('saved_routes').select('id').limit(1),
+    ])
 
-  const todayTrips = todayTripsRes.data ?? []
-  const weekTrips = weekTripsRes.data ?? []
-  const activeTrips = activeTripsRes.data ?? []
-  const activeVehicles = vehiclesRes.data ?? []
-  const activeDrivers = driversRes.data ?? []
-  const hasRoutes = (routesRes.data ?? []).length > 0
+    const todayTrips = (todayTripsRes.data ?? []) as unknown as { id: string; status: string }[]
+    const weekTrips = (weekTripsRes.data ?? []) as unknown as { id: string }[]
+    const activeTrips = (activeTripsRes.data ?? []) as unknown as { id: string; status: string }[]
+    const activeVehicles = (vehiclesRes.data ?? []) as unknown as { id: string; status: string }[]
+    const activeDrivers = (driversRes.data ?? []) as unknown as { id: string; status: string }[]
+    const routes = (routesRes.data ?? []) as unknown as { id: string }[]
 
-  const unassigned = todayTrips.filter(t => t.status === 'confirmed').length
+    setTodayTripsCount(todayTrips.length)
+    setWeekTripsCount(weekTrips.length)
+    setActiveTripsCount(activeTrips.length)
+    setActiveVehiclesCount(activeVehicles.length)
+    setActiveDriversCount(activeDrivers.length)
+    setHasRoutes(routes.length > 0)
+    setUnassigned(todayTrips.filter(t => t.status === 'confirmed').length)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   const modules = [
     {
@@ -39,7 +60,7 @@ export default async function Page() {
       icon: Bus,
       color: '#15803D',
       bg: '#DCFCE7',
-      stats: [`${todayTrips.length} hoy`, `${weekTrips.length} esta semana`],
+      stats: [`${todayTripsCount} hoy`, `${weekTripsCount} esta semana`],
       alert: unassigned > 0,
     },
     {
@@ -49,7 +70,7 @@ export default async function Page() {
       icon: CalendarDays,
       color: '#1D4ED8',
       bg: '#DBEAFE',
-      stats: [`${weekTrips.length} viajes programados`],
+      stats: [`${weekTripsCount} viajes programados`],
       alert: false,
     },
     {
@@ -59,7 +80,7 @@ export default async function Page() {
       icon: Gauge,
       color: '#D97706',
       bg: '#FFFBEB',
-      stats: [`${activeVehicles.length} unidades`, `${activeDrivers.length} operadores`],
+      stats: [`${activeVehiclesCount} unidades`, `${activeDriversCount} operadores`],
       alert: unassigned > 0,
     },
     {
@@ -79,26 +100,33 @@ export default async function Page() {
       icon: Radio,
       color: '#0891B2',
       bg: '#ECFEFF',
-      stats: [`${activeTrips.length} viajes en curso`],
-      alert: activeTrips.length > 0,
+      stats: [`${activeTripsCount} viajes en curso`],
+      alert: activeTripsCount > 0,
     },
   ]
+
+  if (loading) return <div className="p-8 text-slate-500 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Operación</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Gestión integral de viajes, rutas y control en tiempo real</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Operación</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Gestión integral de viajes, rutas y control en tiempo real</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+          <RefreshCw size={13} /> Actualizar
+        </button>
       </div>
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Viajes hoy',         value: String(todayTrips.length),   color: '#15803D', bg: '#DCFCE7', icon: Bus },
-          { label: 'Esta semana',        value: String(weekTrips.length),    color: '#1D4ED8', bg: '#DBEAFE', icon: CalendarDays },
-          { label: 'En curso ahora',     value: String(activeTrips.length),  color: '#0891B2', bg: '#ECFEFF', icon: Radio },
-          { label: 'Sin asignar hoy',    value: String(unassigned),          color: unassigned > 0 ? '#DC2626' : '#16A34A', bg: unassigned > 0 ? '#FFF1F2' : '#F0FDF4', icon: AlertTriangle },
+          { label: 'Viajes hoy',         value: String(todayTripsCount),   color: '#15803D', bg: '#DCFCE7', icon: Bus },
+          { label: 'Esta semana',        value: String(weekTripsCount),    color: '#1D4ED8', bg: '#DBEAFE', icon: CalendarDays },
+          { label: 'En curso ahora',     value: String(activeTripsCount),  color: '#0891B2', bg: '#ECFEFF', icon: Radio },
+          { label: 'Sin asignar hoy',    value: String(unassigned),        color: unassigned > 0 ? '#DC2626' : '#16A34A', bg: unassigned > 0 ? '#FFF1F2' : '#F0FDF4', icon: AlertTriangle },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
             <div className="flex items-start justify-between mb-2">

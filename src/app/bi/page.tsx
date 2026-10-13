@@ -1,36 +1,49 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { BarChart3, TrendingUp, LayoutDashboard, Bell, ChevronRight, AlertTriangle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { BarChart3, TrendingUp, LayoutDashboard, Bell, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Inteligencia — MrBus' }
+export default function Page() {
+  const [loading, setLoading] = useState(true)
+  const [todayTrips, setTodayTrips] = useState(0)
+  const [activePipeline, setActivePipeline] = useState(0)
+  const [approvedQuotes, setApprovedQuotes] = useState(0)
+  const [criticalAlerts, setCriticalAlerts] = useState(0)
+  const [pipelineRevenue, setPipelineRevenue] = useState(0)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    setLoading(true)
+    const supabase = createClient()
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+    const todayStr = new Date().toISOString().slice(0, 10)
 
-  const [tripsRes, leadsRes, quotesRes, alertsRes, arRes] = await Promise.all([
-    supabase.from('trips').select('id, status').gte('departure_date', todayStr),
-    supabase.from('leads').select('id, status').neq('status', 'lost'),
-    supabase.from('quotations').select('id, status, total_price').eq('status', 'approved'),
-    supabase.from('compliance_alerts').select('id').lte('expires_at', new Date(Date.now() + 30 * 86400000).toISOString()),
-    supabase.from('accounts_receivable').select('id, status').eq('status', 'overdue'),
-  ])
+    const [tripsRes, leadsRes, quotesRes, alertsRes, arRes] = await Promise.all([
+      supabase.from('trips').select('id, status').gte('departure_date', todayStr),
+      supabase.from('leads').select('id, status').neq('status', 'lost'),
+      supabase.from('quotations').select('id, status, total_price').eq('status', 'approved'),
+      supabase.from('compliance_alerts').select('id').lte('expires_at', new Date(Date.now() + 30 * 86400000).toISOString()),
+      supabase.from('accounts_receivable').select('id, status').eq('status', 'overdue'),
+    ])
 
-  const trips = tripsRes.data ?? []
-  const leads = leadsRes.data ?? []
-  const quotes = quotesRes.data ?? []
-  const alerts = alertsRes.data ?? []
-  const overdueAR = arRes.data ?? []
+    const trips = (tripsRes.data ?? []) as unknown as { id: string; status: string }[]
+    const leads = (leadsRes.data ?? []) as unknown as { id: string; status: string }[]
+    const quotes = (quotesRes.data ?? []) as unknown as { id: string; status: string; total_price: number | null }[]
+    const alerts = (alertsRes.data ?? []) as unknown as { id: string }[]
+    const overdueAR = (arRes.data ?? []) as unknown as { id: string; status: string }[]
 
-  const todayTrips = trips.length
-  const activePipeline = leads.length
-  const approvedQuotes = quotes.length
-  const criticalAlerts = alerts.length + overdueAR.length
+    setTodayTrips(trips.length)
+    setActivePipeline(leads.length)
+    setApprovedQuotes(quotes.length)
+    setCriticalAlerts(alerts.length + overdueAR.length)
+    setPipelineRevenue(quotes.reduce((s, q) => s + (q.total_price ?? 0), 0))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n)
-  const pipelineRevenue = quotes.reduce((s, q) => s + (q.total_price ?? 0), 0)
 
   const modules = [
     {
@@ -75,12 +88,19 @@ export default async function Page() {
     },
   ]
 
+  if (loading) return <div className="p-8 text-slate-500 text-sm">Cargando...</div>
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Inteligencia de Negocio</h1>
-        <p className="text-sm text-slate-500 mt-0.5">KPIs operativos, rentabilidad por ruta y alertas automáticas</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Inteligencia de Negocio</h1>
+          <p className="text-sm text-slate-500 mt-0.5">KPIs operativos, rentabilidad por ruta y alertas automáticas</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+          <RefreshCw size={13} /> Actualizar
+        </button>
       </div>
 
       {/* KPI strip */}

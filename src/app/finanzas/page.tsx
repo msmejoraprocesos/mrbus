@@ -1,37 +1,56 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { TrendingUp, TrendingDown, Wallet, LineChart, BookOpen, PieChart, ChevronRight, AlertTriangle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { TrendingUp, TrendingDown, Wallet, LineChart, BookOpen, PieChart, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Finanzas — MrBus' }
+export default function Page() {
+  const [loading, setLoading] = useState(true)
+  const [pendingCXCCount, setPendingCXCCount] = useState(0)
+  const [overdueCXCCount, setOverdueCXCCount] = useState(0)
+  const [totalCXC, setTotalCXC] = useState(0)
+  const [pendingCXPCount, setPendingCXPCount] = useState(0)
+  const [overdueCXPCount, setOverdueCXPCount] = useState(0)
+  const [totalCXP, setTotalCXP] = useState(0)
+  const [totalBankBalance, setTotalBankBalance] = useState(0)
+  const [cajasOpen, setCajasOpen] = useState(0)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    setLoading(true)
+    const supabase = createClient()
 
-  const [cxcRes, cxpRes, cajaRes, tesoreriaRes] = await Promise.all([
-    supabase.from('accounts_receivable').select('id, status, amount, paid_amount'),
-    supabase.from('accounts_payable').select('id, status, amount, due_date'),
-    supabase.from('petty_cash').select('id, balance, max_balance').eq('status', 'open'),
-    supabase.from('bank_accounts').select('id, balance').eq('active', true),
-  ])
+    const [cxcRes, cxpRes, cajaRes, tesoreriaRes] = await Promise.all([
+      supabase.from('accounts_receivable').select('id, status, amount, paid_amount'),
+      supabase.from('accounts_payable').select('id, status, amount, due_date'),
+      supabase.from('petty_cash').select('id, balance, max_balance').eq('status', 'open'),
+      supabase.from('bank_accounts').select('id, balance').eq('active', true),
+    ])
 
-  const cxc = cxcRes.data ?? []
-  const cxp = cxpRes.data ?? []
-  const cajas = cajaRes.data ?? []
-  const bankAccounts = tesoreriaRes.data ?? []
+    const cxc = (cxcRes.data ?? []) as unknown as { id: string; status: string; amount: number | null; paid_amount: number | null }[]
+    const cxp = (cxpRes.data ?? []) as unknown as { id: string; status: string; amount: number | null; due_date: string | null }[]
+    const cajas = (cajaRes.data ?? []) as unknown as { id: string; balance: number | null; max_balance: number | null }[]
+    const bankAccounts = (tesoreriaRes.data ?? []) as unknown as { id: string; balance: number | null }[]
+
+    const pendingCXC = cxc.filter(r => r.status === 'pending' || r.status === 'partial')
+    const overdueCXC = cxc.filter(r => r.status === 'overdue')
+    const pendingCXP = cxp.filter(r => r.status === 'pending' || r.status === 'partial')
+    const overdueCXP = cxp.filter(r => r.status === 'overdue')
+
+    setPendingCXCCount(pendingCXC.length)
+    setOverdueCXCCount(overdueCXC.length)
+    setTotalCXC(pendingCXC.reduce((s, r) => s + ((r.amount ?? 0) - (r.paid_amount ?? 0)), 0))
+    setPendingCXPCount(pendingCXP.length)
+    setOverdueCXPCount(overdueCXP.length)
+    setTotalCXP(pendingCXP.reduce((s, r) => s + (r.amount ?? 0), 0))
+    setTotalBankBalance(bankAccounts.reduce((s, a) => s + (a.balance ?? 0), 0))
+    setCajasOpen(cajas.length)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n)
-
-  const pendingCXC = cxc.filter(r => r.status === 'pending' || r.status === 'partial')
-  const overdueCXC = cxc.filter(r => r.status === 'overdue')
-  const totalCXC = pendingCXC.reduce((s, r) => s + ((r.amount ?? 0) - (r.paid_amount ?? 0)), 0)
-
-  const pendingCXP = cxp.filter(r => r.status === 'pending' || r.status === 'partial')
-  const overdueCXP = cxp.filter(r => r.status === 'overdue')
-  const totalCXP = pendingCXP.reduce((s, r) => s + (r.amount ?? 0), 0)
-
-  const totalBankBalance = bankAccounts.reduce((s, a) => s + (a.balance ?? 0), 0)
-  const cajasOpen = cajas.length
 
   const modules = [
     {
@@ -41,8 +60,8 @@ export default async function Page() {
       icon: TrendingUp,
       color: '#0F766E',
       bg: '#CCFBF1',
-      stats: [`${pendingCXC.length} pendientes`, fmt(totalCXC) + ' por cobrar', overdueCXC.length > 0 ? `${overdueCXC.length} vencidas` : ''],
-      alert: overdueCXC.length > 0,
+      stats: [`${pendingCXCCount} pendientes`, fmt(totalCXC) + ' por cobrar', overdueCXCCount > 0 ? `${overdueCXCCount} vencidas` : ''],
+      alert: overdueCXCCount > 0,
     },
     {
       name: 'Cuentas por Pagar',
@@ -51,8 +70,8 @@ export default async function Page() {
       icon: TrendingDown,
       color: '#DC2626',
       bg: '#FFF1F2',
-      stats: [`${pendingCXP.length} pendientes`, fmt(totalCXP) + ' por pagar', overdueCXP.length > 0 ? `${overdueCXP.length} vencidas` : ''],
-      alert: overdueCXP.length > 0,
+      stats: [`${pendingCXPCount} pendientes`, fmt(totalCXP) + ' por pagar', overdueCXPCount > 0 ? `${overdueCXPCount} vencidas` : ''],
+      alert: overdueCXPCount > 0,
     },
     {
       name: 'Caja Chica',
@@ -96,21 +115,28 @@ export default async function Page() {
     },
   ]
 
+  if (loading) return <div className="p-8 text-slate-500 text-sm">Cargando...</div>
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Finanzas</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Control financiero: cobros, pagos, caja y análisis de rentabilidad</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Finanzas</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Control financiero: cobros, pagos, caja y análisis de rentabilidad</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+          <RefreshCw size={13} /> Actualizar
+        </button>
       </div>
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Por cobrar',   value: fmt(totalCXC),          color: '#0F766E', bg: '#CCFBF1', icon: TrendingUp },
-          { label: 'Por pagar',    value: fmt(totalCXP),          color: '#DC2626', bg: '#FFF1F2', icon: TrendingDown },
-          { label: 'CXC vencidas', value: String(overdueCXC.length), color: overdueCXC.length > 0 ? '#DC2626' : '#16A34A', bg: overdueCXC.length > 0 ? '#FFF1F2' : '#F0FDF4', icon: AlertTriangle },
-          { label: 'Saldo bancario', value: fmt(totalBankBalance), color: '#1D4ED8', bg: '#DBEAFE', icon: LineChart },
+          { label: 'Por cobrar',   value: fmt(totalCXC),             color: '#0F766E', bg: '#CCFBF1', icon: TrendingUp },
+          { label: 'Por pagar',    value: fmt(totalCXP),             color: '#DC2626', bg: '#FFF1F2', icon: TrendingDown },
+          { label: 'CXC vencidas', value: String(overdueCXCCount),   color: overdueCXCCount > 0 ? '#DC2626' : '#16A34A', bg: overdueCXCCount > 0 ? '#FFF1F2' : '#F0FDF4', icon: AlertTriangle },
+          { label: 'Saldo bancario', value: fmt(totalBankBalance),   color: '#1D4ED8', bg: '#DBEAFE', icon: LineChart },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
             <div className="flex items-start justify-between mb-2">
