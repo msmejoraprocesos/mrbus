@@ -210,7 +210,7 @@ export default function FacturasPage() {
       if (!error && data) {
         await auditLog({ action: 'INSERT', module: 'facturacion', table_name: 'invoices', record_id: data.id, record_folio: folio, after_data: { ...data, cfdi_status: status } })
         if (timbrar) {
-          await trazarExportacion({ tipo: 'CFDI', referencia: folio, destino: 'SAT', registros: form.conceptos.length })
+          await trazarExportacion({ modulo: 'CFDI', formato: 'pdf', registros: form.conceptos.length, user_id: '' })
         }
         await cargar()
         setForm(emptyFactura())
