@@ -309,20 +309,30 @@ CREATE TABLE IF NOT EXISTS leads (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   folio         TEXT,                           -- Folio opcional
   company_name  TEXT,                           -- Empresa
-  contact_name  TEXT NOT NULL,
+  first_name    TEXT,
+  last_name     TEXT,
+  contact_name  TEXT,
   contact_phone TEXT,
   contact_email TEXT,
+  phone         TEXT,
+  email         TEXT,
+  company       TEXT,
   source        TEXT,                           -- Referido, web, llamada, etc.
   service_type  TEXT,                           -- Turismo, corporativo, personal, etc.
   estimated_value NUMERIC(12,2),
-  stage         TEXT NOT NULL DEFAULT 'new',
-  -- new | contacted | proposal | negotiation | won | lost
+  valor_estimado  NUMERIC(12,2),
+  ciudad          TEXT,
+  ultimo_contacto TIMESTAMPTZ,
   assigned_to   TEXT,                           -- Nombre del ejecutivo de cuenta
   expected_close DATE,
   notes         TEXT,
+  status        TEXT NOT NULL DEFAULT 'new',   -- new | contacted | proposal | negotiation | won | lost
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Agregar columna stage si la tabla ya existía sin ella
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS stage TEXT NOT NULL DEFAULT 'new';
 
 CREATE INDEX IF NOT EXISTS idx_leads_stage ON leads(stage);
 
