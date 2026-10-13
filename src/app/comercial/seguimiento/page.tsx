@@ -20,7 +20,8 @@ interface Actividad {
 
 interface Lead { id: string; first_name: string; last_name: string; company: string | null }
 
-const TIPO_CONFIG: Record<string, { color: string; bg: string; border: string; label: string; Icon: React.FC<{size?:number}> }> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TIPO_CONFIG: Record<string, { color: string; bg: string; border: string; label: string; Icon: any }> = {
   llamada:  { color: '#1d4ed8', bg: '#dbeafe', border: '#93c5fd', label: 'Llamada',   Icon: Phone },
   cita:     { color: '#9a3412', bg: '#ffedd5', border: '#fdba74', label: 'Cita',      Icon: Calendar },
   email:    { color: '#6d28d9', bg: '#ede9fe', border: '#c4b5fd', label: 'Email',     Icon: Mail },

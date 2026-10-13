@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Metadata } from 'next'
 import Link from 'next/link'
+import React from 'react'
 import { MapPin, Clock, Users, CheckCircle, Plus, TrendingUp, DollarSign, UserCheck, CalendarDays, ArrowRight } from 'lucide-react'
 import { TRIP_STATUS_LABELS, TRIP_STATUS_COLORS, formatDate, formatTime, cn } from '@/lib/utils/index'
 
@@ -118,12 +119,12 @@ export default async function DashboardPage() {
       <div>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Operaciones hoy</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Viajes hoy', value: kpisOp.total, icon: <MapPin className="w-5 h-5 text-blue-500" />, bg: 'bg-blue-50', href: '/operacion' },
-            { label: 'En movimiento', value: kpisOp.active, icon: <Clock className="w-5 h-5 text-amber-500" />, bg: 'bg-amber-50', href: '/operacion' },
-            { label: 'Pasajeros', value: kpisOp.passengers, icon: <Users className="w-5 h-5 text-purple-500" />, bg: 'bg-purple-50', href: '/operacion' },
-            { label: 'Abordaron', value: kpisOp.boarded, icon: <CheckCircle className="w-5 h-5 text-green-500" />, bg: 'bg-green-50', href: '/operacion' },
-          ].map(k => (
+          {([
+            { label: 'Viajes hoy', value: kpisOp.total as React.ReactNode, icon: <MapPin className="w-5 h-5 text-blue-500" />, bg: 'bg-blue-50', href: '/operacion' },
+            { label: 'En movimiento', value: kpisOp.active as React.ReactNode, icon: <Clock className="w-5 h-5 text-amber-500" />, bg: 'bg-amber-50', href: '/operacion' },
+            { label: 'Pasajeros', value: kpisOp.passengers as React.ReactNode, icon: <Users className="w-5 h-5 text-purple-500" />, bg: 'bg-purple-50', href: '/operacion' },
+            { label: 'Abordaron', value: kpisOp.boarded as React.ReactNode, icon: <CheckCircle className="w-5 h-5 text-green-500" />, bg: 'bg-green-50', href: '/operacion' },
+          ] as const).map(k => (
             <Link key={k.label} href={k.href} className="card p-5 hover:shadow-md transition-shadow block">
               <div className="flex items-start justify-between">
                 <div>
@@ -247,7 +248,8 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {pendientes.slice(0, 8).map((a: { id: string; tipo: string; titulo: string; fecha: string; leads?: { first_name: string; last_name: string; company: string | null } | null }) => {
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {pendientes.slice(0, 8).map((a: any) => {
                   const hora = new Date(a.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
                   const lead = a.leads ? `${a.leads.first_name} ${a.leads.last_name}` : null
                   return (

@@ -81,7 +81,7 @@ interface Lead {
   source: string | null
   service_type: string | null
   pipeline_stage: string
-  notes: string | null
+  notas: string | null
   created_at: string
   ultimo_contacto: string | null
   valor_estimado: number | null
@@ -271,7 +271,7 @@ export default function CRMPage() {
             {(['kanban', 'lista'] as const).map(v => (
               <button key={v} onClick={() => setVista(v)}
                 className="px-3 h-9 text-xs font-medium transition-colors"
-                style={{ background: vista === v ? '#1D4ED8', color: vista === v ? '#fff' : '#6B7280' }}>
+                style={{ background: vista === v ? '#1D4ED8' : 'white', color: vista === v ? '#fff' : '#6B7280' }}>
                 {v === 'kanban' ? 'Kanban' : 'Lista'}
               </button>
             ))}
