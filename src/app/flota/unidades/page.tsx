@@ -3,7 +3,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fmt, fmtDate } from '@/lib/utils/index'
 import { auditLog } from '@/lib/audit'
-import { Bus, Plus, X, RefreshCw, FileWarning, CheckCircle, Wrench } from 'lucide-react'
+import { Bus, Plus, RefreshCw, FileWarning, CheckCircle, Wrench } from 'lucide-react'
+import Modal from '@/components/ui/Modal'
+import { FieldLabel } from '@/components/ui/Tooltip'
 
 type Vehicle = {
   id: string
@@ -36,7 +38,7 @@ export default function UnidadesPage() {
   const supabase = createClient()
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading]   = useState(true)
-  const [tab, setTab]           = useState<'lista' | 'nueva' | 'detalle'>('lista')
+  const [modalOpen, setModalOpen] = useState(false)
   const [selected, setSelected] = useState<Vehicle | null>(null)
   const [saving, setSaving]     = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
@@ -53,7 +55,7 @@ export default function UnidadesPage() {
 
   useEffect(() => { load() }, [load])
 
-  function openNew() { setForm(empty); setSelected(null); setTab('nueva') }
+  function openNew() { setForm(empty); setSelected(null); setModalOpen(true) }
   function openEdit(v: Vehicle) {
     setForm({
       plate: v.plate, economic_number: v.economic_number, brand: v.brand ?? '', model: v.model ?? '',
@@ -63,7 +65,7 @@ export default function UnidadesPage() {
       notes: v.notes ?? '',
     })
     setSelected(v)
-    setTab('nueva')
+    setModalOpen(true)
   }
 
   async function guardar() {
@@ -99,7 +101,7 @@ export default function UnidadesPage() {
     }
 
     setSaving(false)
-    setTab('lista')
+    setModalOpen(false)
     setSelected(null)
     load()
   }
@@ -151,214 +153,196 @@ export default function UnidadesPage() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-100">
-        {([['lista', 'Lista'], ['nueva', selected ? 'Editar unidad' : 'Nueva unidad']] as const).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-purple-600 text-purple-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-            {label}
-          </button>
-        ))}
+      {/* List (always visible) */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="py-12 text-center text-slate-400">Cargando...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-slate-400 uppercase border-b bg-purple-50">
+                  {['Eco.','Placa','Marca/Modelo','Año','Cap.','Tipo','Estado','Adquisición',''].map(h => (
+                    <th key={h} className="px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-400">
+                    Sin unidades — <button onClick={openNew} className="text-purple-600 underline">registrar primera unidad</button>
+                  </td></tr>
+                ) : filtered.map(v => {
+                  const s = STATUSES[v.status] ?? { label: v.status, color: 'bg-slate-100 text-slate-500' }
+                  return (
+                    <tr key={v.id} className="hover:bg-slate-50/50">
+                      <td className="px-4 py-2.5 font-mono font-bold text-slate-700">{v.economic_number}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="font-mono text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-semibold">{v.plate}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-slate-600">{[v.brand, v.model].filter(Boolean).join(' ') || '—'}</td>
+                      <td className="px-4 py-2.5 text-slate-500">{v.year ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-slate-700 font-semibold">{v.capacity ? `${v.capacity} pas.` : '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-slate-500">{v.type ?? '—'}</td>
+                      <td className="px-4 py-2.5">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${s.color}`}>{s.label}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-slate-400">
+                        {v.acquisition_date ? fmtDate(v.acquisition_date) : '—'}
+                        {v.acquisition_cost ? ` · ${fmt(v.acquisition_cost)}` : ''}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <button onClick={() => openEdit(v)} className="text-xs text-purple-500 hover:text-purple-700">Editar</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Lista */}
-      {tab === 'lista' && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="py-12 text-center text-slate-400">Cargando...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-semibold text-slate-400 uppercase border-b bg-purple-50">
-                    {['Eco.','Placa','Marca/Modelo','Año','Cap.','Tipo','Estado','Adquisición',''].map(h => (
-                      <th key={h} className="px-4 py-3">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filtered.length === 0 ? (
-                    <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-400">
-                      Sin unidades — <button onClick={openNew} className="text-purple-600 underline">registrar primera unidad</button>
-                    </td></tr>
-                  ) : filtered.map(v => {
-                    const s = STATUSES[v.status] ?? { label: v.status, color: 'bg-slate-100 text-slate-500' }
-                    return (
-                      <tr key={v.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-2.5 font-mono font-bold text-slate-700">{v.economic_number}</td>
-                        <td className="px-4 py-2.5">
-                          <span className="font-mono text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-semibold">{v.plate}</span>
-                        </td>
-                        <td className="px-4 py-2.5 text-slate-600">{[v.brand, v.model].filter(Boolean).join(' ') || '—'}</td>
-                        <td className="px-4 py-2.5 text-slate-500">{v.year ?? '—'}</td>
-                        <td className="px-4 py-2.5 text-slate-700 font-semibold">{v.capacity ? `${v.capacity} pas.` : '—'}</td>
-                        <td className="px-4 py-2.5 text-xs text-slate-500">{v.type ?? '—'}</td>
-                        <td className="px-4 py-2.5">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${s.color}`}>{s.label}</span>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-slate-400">
-                          {v.acquisition_date ? fmtDate(v.acquisition_date) : '—'}
-                          {v.acquisition_cost ? ` · ${fmt(v.acquisition_cost)}` : ''}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <button onClick={() => openEdit(v)} className="text-xs text-purple-500 hover:text-purple-700">Editar</button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Nueva / Editar */}
-      {tab === 'nueva' && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 max-w-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-              <Bus size={16} className="text-purple-600" />
-              {selected ? `Editar ${selected.plate}` : 'Registrar nueva unidad'}
-            </h3>
-            <button onClick={() => setTab('lista')} className="text-slate-400 hover:text-slate-600">
-              <X size={16} />
+      {/* Modal: Nueva / Editar unidad */}
+      <Modal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setSelected(null) }}
+        title={selected ? `Editar ${selected.plate}` : 'Registrar nueva unidad'}
+        size="lg"
+        footer={
+          <>
+            <button onClick={() => { setModalOpen(false); setSelected(null) }}
+              className="border border-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+              Cancelar
             </button>
+            <button onClick={guardar} disabled={saving || !form.plate || !form.economic_number}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+              {selected ? 'Guardar cambios' : 'Registrar unidad'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel required tooltip="Identificador interno de la empresa">Número económico</FieldLabel>
+              <input type="text" placeholder="001"
+                value={form.economic_number}
+                onChange={e => setForm(f => ({...f, economic_number: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+            <div>
+              <FieldLabel required>Placa</FieldLabel>
+              <input type="text" placeholder="ABC-123"
+                value={form.plate}
+                onChange={e => setForm(f => ({...f, plate: e.target.value.toUpperCase()}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Número económico *</label>
-                <input type="text" placeholder="001"
-                  value={form.economic_number}
-                  onChange={e => setForm(f => ({...f, economic_number: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Placa *</label>
-                <input type="text" placeholder="ABC-123"
-                  value={form.plate}
-                  onChange={e => setForm(f => ({...f, plate: e.target.value.toUpperCase()}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Marca</label>
-                <input type="text" placeholder="Dina"
-                  value={form.brand}
-                  onChange={e => setForm(f => ({...f, brand: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Modelo</label>
-                <input type="text" placeholder="DH360"
-                  value={form.model}
-                  onChange={e => setForm(f => ({...f, model: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Año</label>
-                <input type="number" min="1990" max="2030" placeholder="2020"
-                  value={form.year}
-                  onChange={e => setForm(f => ({...f, year: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Tipo</label>
-                <select value={form.type}
-                  onChange={e => setForm(f => ({...f, type: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
-                  {TYPES.map(t => <option key={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Capacidad (pasajeros)</label>
-                <input type="number" min="1" max="80" placeholder="45"
-                  value={form.capacity}
-                  onChange={e => setForm(f => ({...f, capacity: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Estado</label>
-                <select value={form.status}
-                  onChange={e => setForm(f => ({...f, status: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
-                  {Object.entries(STATUSES).map(([val, s]) => (
-                    <option key={val} value={val}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">NIV / VIN</label>
-                <input type="text" placeholder="3VWBX7AJ6EM..."
-                  value={form.vin}
-                  onChange={e => setForm(f => ({...f, vin: e.target.value.toUpperCase()}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Número de motor</label>
-                <input type="text" placeholder=""
-                  value={form.engine_number}
-                  onChange={e => setForm(f => ({...f, engine_number: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Color</label>
-                <input type="text" placeholder="Blanco"
-                  value={form.color}
-                  onChange={e => setForm(f => ({...f, color: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Fecha adquisición</label>
-                <input type="date"
-                  value={form.acquisition_date}
-                  onChange={e => setForm(f => ({...f, acquisition_date: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Costo adquisición</label>
-                <input type="number" min="0" step="1000"
-                  value={form.acquisition_cost}
-                  onChange={e => setForm(f => ({...f, acquisition_cost: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas</label>
-              <textarea rows={2}
-                value={form.notes}
-                onChange={e => setForm(f => ({...f, notes: e.target.value}))}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
+              <FieldLabel>Marca</FieldLabel>
+              <input type="text" placeholder="Dina"
+                value={form.brand}
+                onChange={e => setForm(f => ({...f, brand: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
             </div>
+            <div>
+              <FieldLabel>Modelo</FieldLabel>
+              <input type="text" placeholder="DH360"
+                value={form.model}
+                onChange={e => setForm(f => ({...f, model: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+            <div>
+              <FieldLabel>Año</FieldLabel>
+              <input type="number" min="1990" max="2030" placeholder="2020"
+                value={form.year}
+                onChange={e => setForm(f => ({...f, year: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+          </div>
 
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => setTab('lista')}
-                className="flex-1 border border-slate-200 text-slate-600 text-sm font-medium py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                Cancelar
-              </button>
-              <button onClick={guardar} disabled={saving || !form.plate || !form.economic_number}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5">
-                {saving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                {selected ? 'Guardar cambios' : 'Registrar unidad'}
-              </button>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <FieldLabel tooltip="Categoría operativa de la unidad">Tipo</FieldLabel>
+              <select value={form.type}
+                onChange={e => setForm(f => ({...f, type: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
+                {TYPES.map(t => <option key={t}>{t}</option>)}
+              </select>
             </div>
+            <div>
+              <FieldLabel>Capacidad (pasajeros)</FieldLabel>
+              <input type="number" min="1" max="80" placeholder="45"
+                value={form.capacity}
+                onChange={e => setForm(f => ({...f, capacity: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+            <div>
+              <FieldLabel tooltip="Controla si la unidad aparece disponible en operaciones">Estado</FieldLabel>
+              <select value={form.status}
+                onChange={e => setForm(f => ({...f, status: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
+                {Object.entries(STATUSES).map(([val, s]) => (
+                  <option key={val} value={val}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>NIV / VIN</FieldLabel>
+              <input type="text" placeholder="3VWBX7AJ6EM..."
+                value={form.vin}
+                onChange={e => setForm(f => ({...f, vin: e.target.value.toUpperCase()}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+            <div>
+              <FieldLabel>Número de motor</FieldLabel>
+              <input type="text"
+                value={form.engine_number}
+                onChange={e => setForm(f => ({...f, engine_number: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <FieldLabel>Color</FieldLabel>
+              <input type="text" placeholder="Blanco"
+                value={form.color}
+                onChange={e => setForm(f => ({...f, color: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+            <div>
+              <FieldLabel>Fecha adquisición</FieldLabel>
+              <input type="date"
+                value={form.acquisition_date}
+                onChange={e => setForm(f => ({...f, acquisition_date: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+            <div>
+              <FieldLabel>Costo adquisición</FieldLabel>
+              <input type="number" min="0" step="1000"
+                value={form.acquisition_cost}
+                onChange={e => setForm(f => ({...f, acquisition_cost: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Notas</FieldLabel>
+            <textarea rows={2}
+              value={form.notes}
+              onChange={e => setForm(f => ({...f, notes: e.target.value}))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

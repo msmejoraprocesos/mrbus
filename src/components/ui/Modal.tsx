@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
-import { cn } from '@/lib/utils/index'
 
 interface ModalProps {
   open: boolean
@@ -13,11 +13,11 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-const SIZES = {
-  sm: 'max-w-sm',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
+const MAX_WIDTHS: Record<string, string> = {
+  sm: 'max-w-[384px]',
+  md: 'max-w-[512px]',
+  lg: 'max-w-[672px]',
+  xl: 'max-w-[800px]',
 }
 
 export default function Modal({
@@ -25,7 +25,6 @@ export default function Modal({
 }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null)
 
-  // Cerrar con Escape
   useEffect(() => {
     if (!open) return
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -33,7 +32,6 @@ export default function Modal({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Bloquear scroll del body
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -41,22 +39,18 @@ export default function Modal({
 
   if (!open) return null
 
-  return (
+  const portal = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(2px)' }}
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         ref={ref}
-        className={cn(
-          'w-full bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh]',
-          SIZES[size]
-        )}
+        className={`bg-white rounded-2xl shadow-2xl w-full ${MAX_WIDTHS[size]} flex flex-col`}
         style={{ animation: 'modal-in 0.15s ease-out' }}
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-semibold text-slate-800 leading-tight">{title}</h2>
             {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
@@ -70,13 +64,13 @@ export default function Modal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="overflow-y-auto max-h-[80vh] p-6">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex-shrink-0 px-5 py-3 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50/60 rounded-b-xl">
+          <div className="flex-shrink-0 px-6 py-3 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50/60 rounded-b-2xl">
             {footer}
           </div>
         )}
@@ -90,4 +84,6 @@ export default function Modal({
       `}</style>
     </div>
   )
+
+  return createPortal(portal, document.body)
 }

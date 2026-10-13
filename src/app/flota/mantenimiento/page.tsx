@@ -3,7 +3,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fmt, fmtDate } from '@/lib/utils/index'
 import { auditLog, getNextFolio } from '@/lib/audit'
-import { Wrench, Plus, X, RefreshCw, AlertTriangle, Clock, CheckCircle, DollarSign } from 'lucide-react'
+import { Wrench, Plus, RefreshCw, AlertTriangle, Clock, CheckCircle, DollarSign } from 'lucide-react'
+import Modal from '@/components/ui/Modal'
+import { FieldLabel } from '@/components/ui/Tooltip'
 
 type Order = {
   id: string
@@ -46,7 +48,8 @@ export default function MantenimientoPage() {
   const [orders, setOrders]     = useState<Order[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading]   = useState(true)
-  const [tab, setTab]           = useState<'lista' | 'nueva' | 'detalle'>('lista')
+  const [newModalOpen, setNewModalOpen]     = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selected, setSelected] = useState<Order | null>(null)
   const [saving, setSaving]     = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
@@ -104,13 +107,11 @@ export default function MantenimientoPage() {
     }
     const { error } = await supabase.from('maintenance_orders').insert(row)
     if (error) { alert('Error: ' + error.message); setSaving(false); return }
-
-    const veh = vehicles.find(v => v.id === form.vehicle_id)
     await auditLog({ action: 'INSERT', module: 'mantenimiento', table_name: 'maintenance_orders', record_folio: folio, user_id: uid })
 
     setForm({ vehicle_id: '', maint_type: 'preventivo', description: '', scheduled_date: new Date().toISOString().slice(0,10), estimated_cost: '', blocks_vehicle: false, technician: '', notes: '' })
     setSaving(false)
-    setTab('lista')
+    setNewModalOpen(false)
     load()
   }
 
@@ -130,9 +131,15 @@ export default function MantenimientoPage() {
     if (error) { alert('Error: ' + error.message); setSaving(false); return }
     await auditLog({ action: 'UPDATE', module: 'mantenimiento', table_name: 'maintenance_orders', record_folio: selected.order_number, user_id: uid })
     setSaving(false)
-    setTab('lista')
+    setDetailModalOpen(false)
     setSelected(null)
     load()
+  }
+
+  function openDetail(o: Order) {
+    setSelected(o)
+    setUpdateForm({ status: o.status, actual_cost: o.actual_cost ? String(o.actual_cost) : '', completed_date: o.completed_date ?? '', notes: o.notes ?? '' })
+    setDetailModalOpen(true)
   }
 
   const filtered = filterStatus === 'all' ? orders : orders.filter(o => o.status === filterStatus)
@@ -159,9 +166,9 @@ export default function MantenimientoPage() {
           <button onClick={load} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
             <RefreshCw size={15} />
           </button>
-          <button onClick={() => setTab('nueva')}
+          <button onClick={() => setNewModalOpen(true)}
             className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
-            <Plus size={15} /> Nueva orden
+            <Plus size={15} /> Nueva OT
           </button>
         </div>
       </div>
@@ -184,208 +191,197 @@ export default function MantenimientoPage() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-100">
-        {([['lista','Lista'], ['nueva','Nueva orden']] as const).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-purple-600 text-purple-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-            {label}
-          </button>
-        ))}
-        {tab === 'detalle' && (
-          <button className="px-4 py-2 text-sm font-medium border-b-2 border-purple-600 text-purple-700">
-            Actualizar orden
-          </button>
+      {/* List (always visible) */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        {/* Filtros */}
+        <div className="px-4 py-3 border-b border-slate-100 flex gap-2 flex-wrap">
+          {[['all','Todos'], ...Object.entries(STATUS_MAP).map(([v, s]) => [v, s.label])].map(([val, label]) => (
+            <button key={val} onClick={() => setFilterStatus(val)}
+              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${filterStatus === val ? 'bg-purple-100 text-purple-700' : 'text-slate-500 hover:bg-slate-100'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-slate-400">Cargando...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-slate-400 uppercase border-b bg-purple-50">
+                  {['Orden','Unidad','Tipo','Descripción','Fecha','Est.','Real','Estado','Bloquea',''].map(h => (
+                    <th key={h} className="px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-400">
+                    Sin órdenes — <button onClick={() => setNewModalOpen(true)} className="text-purple-600 underline">crear primera orden</button>
+                  </td></tr>
+                ) : filtered.map(o => {
+                  const s = STATUS_MAP[o.status] ?? { label: o.status, color: 'bg-slate-100 text-slate-500' }
+                  const typeLabel = MAINT_TYPES.find(t => t.val === o.maint_type)?.label ?? o.maint_type
+                  return (
+                    <tr key={o.id} className="hover:bg-slate-50/50 cursor-pointer"
+                      onClick={() => openDetail(o)}>
+                      <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-600">{o.order_number}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="font-mono text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-semibold">
+                          {o.vehicle?.plate ?? '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-slate-500">{typeLabel}</td>
+                      <td className="px-4 py-2.5 max-w-[180px]">
+                        <p className="truncate text-slate-700">{o.description}</p>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-slate-500">{fmtDate(o.scheduled_date)}</td>
+                      <td className="px-4 py-2.5 text-slate-500">{o.estimated_cost ? fmt(o.estimated_cost) : '—'}</td>
+                      <td className="px-4 py-2.5 font-semibold">{o.actual_cost ? fmt(o.actual_cost) : '—'}</td>
+                      <td className="px-4 py-2.5">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${s.color}`}>{s.label}</span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${o.blocks_vehicle ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {o.blocks_vehicle ? '🔴 Sí' : '🟢 No'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-purple-400">Ver →</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Lista */}
-      {tab === 'lista' && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-          {/* Filtros */}
-          <div className="px-4 py-3 border-b border-slate-100 flex gap-2 flex-wrap">
-            {[['all','Todos'], ...Object.entries(STATUS_MAP).map(([v, s]) => [v, s.label])].map(([val, label]) => (
-              <button key={val} onClick={() => setFilterStatus(val)}
-                className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${filterStatus === val ? 'bg-purple-100 text-purple-700' : 'text-slate-500 hover:bg-slate-100'}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="py-12 text-center text-slate-400">Cargando...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-semibold text-slate-400 uppercase border-b bg-purple-50">
-                    {['Orden','Unidad','Tipo','Descripción','Fecha','Est.','Real','Estado','Bloquea',''].map(h => (
-                      <th key={h} className="px-4 py-3">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filtered.length === 0 ? (
-                    <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-400">
-                      Sin órdenes — <button onClick={() => setTab('nueva')} className="text-purple-600 underline">crear primera orden</button>
-                    </td></tr>
-                  ) : filtered.map(o => {
-                    const s = STATUS_MAP[o.status] ?? { label: o.status, color: 'bg-slate-100 text-slate-500' }
-                    const typeLabel = MAINT_TYPES.find(t => t.val === o.maint_type)?.label ?? o.maint_type
-                    return (
-                      <tr key={o.id} className="hover:bg-slate-50/50 cursor-pointer"
-                        onClick={() => { setSelected(o); setUpdateForm({ status: o.status, actual_cost: o.actual_cost ? String(o.actual_cost) : '', completed_date: o.completed_date ?? '', notes: o.notes ?? '' }); setTab('detalle') }}>
-                        <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-600">{o.order_number}</td>
-                        <td className="px-4 py-2.5">
-                          <span className="font-mono text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-semibold">
-                            {o.vehicle?.plate ?? '—'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-slate-500">{typeLabel}</td>
-                        <td className="px-4 py-2.5 max-w-[180px]">
-                          <p className="truncate text-slate-700">{o.description}</p>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-slate-500">{fmtDate(o.scheduled_date)}</td>
-                        <td className="px-4 py-2.5 text-slate-500">{o.estimated_cost ? fmt(o.estimated_cost) : '—'}</td>
-                        <td className="px-4 py-2.5 font-semibold">{o.actual_cost ? fmt(o.actual_cost) : '—'}</td>
-                        <td className="px-4 py-2.5">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${s.color}`}>{s.label}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${o.blocks_vehicle ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
-                            {o.blocks_vehicle ? '🔴 Sí' : '🟢 No'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-purple-400">Ver →</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Nueva orden */}
-      {tab === 'nueva' && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 max-w-xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-              <Wrench size={16} className="text-purple-600" /> Nueva orden de mantenimiento
-            </h3>
-            <button onClick={() => setTab('lista')} className="text-slate-400 hover:text-slate-600">
-              <X size={16} />
+      {/* Modal: Nueva OT */}
+      <Modal
+        open={newModalOpen}
+        onClose={() => setNewModalOpen(false)}
+        title="Nueva orden de mantenimiento"
+        size="md"
+        footer={
+          <>
+            <button onClick={() => setNewModalOpen(false)}
+              className="border border-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+              Cancelar
             </button>
+            <button onClick={guardar} disabled={saving || !form.vehicle_id || !form.description || !form.scheduled_date}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
+              Crear orden
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel required>Unidad</FieldLabel>
+              <select value={form.vehicle_id}
+                onChange={e => setForm(f => ({...f, vehicle_id: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
+                <option value="">Seleccionar...</option>
+                {vehicles.map(v => (
+                  <option key={v.id} value={v.id}>{v.economic_number} — {v.plate}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <FieldLabel tooltip="Preventivo = programado por calendario; Correctivo = falla inesperada">Tipo</FieldLabel>
+              <select value={form.maint_type}
+                onChange={e => setForm(f => ({...f, maint_type: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
+                {MAINT_TYPES.map(t => <option key={t.val} value={t.val}>{t.label}</option>)}
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Unidad *</label>
-                <select value={form.vehicle_id}
-                  onChange={e => setForm(f => ({...f, vehicle_id: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
-                  <option value="">Seleccionar...</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>{v.economic_number} — {v.plate}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Tipo *</label>
-                <select value={form.maint_type}
-                  onChange={e => setForm(f => ({...f, maint_type: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
-                  {MAINT_TYPES.map(t => <option key={t.val} value={t.val}>{t.label}</option>)}
-                </select>
-              </div>
-            </div>
+          <div>
+            <FieldLabel required>Descripción del trabajo</FieldLabel>
+            <textarea rows={3} placeholder="Describe el trabajo a realizar..."
+              value={form.description}
+              onChange={e => setForm(f => ({...f, description: e.target.value}))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
+          </div>
 
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción del trabajo *</label>
-              <textarea rows={3} placeholder="Describe el trabajo a realizar..."
-                value={form.description}
-                onChange={e => setForm(f => ({...f, description: e.target.value}))}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Fecha programada *</label>
-                <input type="date" value={form.scheduled_date}
-                  onChange={e => setForm(f => ({...f, scheduled_date: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Costo estimado</label>
-                <input type="number" min="0" step="100" placeholder="5000"
-                  value={form.estimated_cost}
-                  onChange={e => setForm(f => ({...f, estimated_cost: e.target.value}))}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Técnico / Taller</label>
-              <input type="text" placeholder="Nombre del técnico o taller"
-                value={form.technician}
-                onChange={e => setForm(f => ({...f, technician: e.target.value}))}
+              <FieldLabel required>Fecha programada</FieldLabel>
+              <input type="date" value={form.scheduled_date}
+                onChange={e => setForm(f => ({...f, scheduled_date: e.target.value}))}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
             </div>
-
-            <div className="flex items-center gap-3 bg-red-50 rounded-lg px-4 py-3">
-              <input type="checkbox" id="blocks" checked={form.blocks_vehicle}
-                onChange={e => setForm(f => ({...f, blocks_vehicle: e.target.checked}))}
-                className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-400" />
-              <label htmlFor="blocks" className="text-sm text-slate-700 cursor-pointer">
-                <span className="font-medium text-red-700">Bloquea unidad</span> — la unidad no puede operar durante este mantenimiento
-              </label>
-            </div>
-
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas internas</label>
-              <textarea rows={2} placeholder="Información adicional..."
-                value={form.notes}
-                onChange={e => setForm(f => ({...f, notes: e.target.value}))}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
+              <FieldLabel>Costo estimado</FieldLabel>
+              <input type="number" min="0" step="100" placeholder="5000"
+                value={form.estimated_cost}
+                onChange={e => setForm(f => ({...f, estimated_cost: e.target.value}))}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
             </div>
+          </div>
 
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => setTab('lista')}
-                className="flex-1 border border-slate-200 text-slate-600 text-sm font-medium py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                Cancelar
-              </button>
-              <button onClick={guardar} disabled={saving || !form.vehicle_id || !form.description || !form.scheduled_date}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5">
-                {saving ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
-                Crear orden
-              </button>
-            </div>
+          <div>
+            <FieldLabel>Técnico / Taller</FieldLabel>
+            <input type="text" placeholder="Nombre del técnico o taller"
+              value={form.technician}
+              onChange={e => setForm(f => ({...f, technician: e.target.value}))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
+          </div>
+
+          <div className="flex items-center gap-3 bg-red-50 rounded-lg px-4 py-3">
+            <input type="checkbox" id="blocks" checked={form.blocks_vehicle}
+              onChange={e => setForm(f => ({...f, blocks_vehicle: e.target.checked}))}
+              className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-400" />
+            <label htmlFor="blocks" className="text-sm text-slate-700 cursor-pointer flex items-center gap-1">
+              <span className="font-medium text-red-700">Bloquea unidad</span>
+              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-200 text-red-600 text-[10px] font-bold cursor-help" title="Si está activo, la unidad no aparecerá disponible en operaciones hasta cerrar la OT">?</span>
+              <span className="text-slate-500"> — la unidad no puede operar durante este mantenimiento</span>
+            </label>
+          </div>
+
+          <div>
+            <FieldLabel>Notas internas</FieldLabel>
+            <textarea rows={2} placeholder="Información adicional..."
+              value={form.notes}
+              onChange={e => setForm(f => ({...f, notes: e.target.value}))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
           </div>
         </div>
-      )}
+      </Modal>
 
-      {/* Detalle / actualizar */}
-      {tab === 'detalle' && selected && (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 max-w-xl">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="font-mono font-bold text-slate-700">{selected.order_number}</p>
-              <p className="text-xs text-slate-400">{selected.vehicle?.plate} — {MAINT_TYPES.find(t=>t.val===selected.maint_type)?.label}</p>
-            </div>
-            <button onClick={() => { setTab('lista'); setSelected(null) }} className="text-slate-400 hover:text-slate-600">
-              <X size={16} />
+      {/* Modal: Detalle / Actualizar OT */}
+      <Modal
+        open={detailModalOpen && !!selected}
+        onClose={() => { setDetailModalOpen(false); setSelected(null) }}
+        title={selected ? `Orden ${selected.order_number}` : ''}
+        subtitle={selected ? `${selected.vehicle?.plate ?? ''} — ${MAINT_TYPES.find(t => t.val === selected.maint_type)?.label ?? selected.maint_type}` : undefined}
+        size="md"
+        footer={
+          <>
+            <button onClick={() => { setDetailModalOpen(false); setSelected(null) }}
+              className="border border-slate-200 text-slate-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+              Cancelar
             </button>
-          </div>
-
-          <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4">
-            <p className="text-sm text-slate-700">{selected.description}</p>
-          </div>
-
+            <button onClick={actualizarOrden} disabled={saving}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+              Actualizar orden
+            </button>
+          </>
+        }
+      >
+        {selected && (
           <div className="space-y-4">
+            <div className="bg-slate-50 rounded-lg px-4 py-3">
+              <p className="text-sm text-slate-700">{selected.description}</p>
+            </div>
+
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Estado</label>
+              <FieldLabel>Estado</FieldLabel>
               <select value={updateForm.status}
                 onChange={e => setUpdateForm(f => ({...f, status: e.target.value}))}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300">
@@ -397,14 +393,14 @@ export default function MantenimientoPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Costo real</label>
+                <FieldLabel>Costo real</FieldLabel>
                 <input type="number" min="0" step="100"
                   value={updateForm.actual_cost}
                   onChange={e => setUpdateForm(f => ({...f, actual_cost: e.target.value}))}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Fecha completado</label>
+                <FieldLabel>Fecha completado</FieldLabel>
                 <input type="date"
                   value={updateForm.completed_date}
                   onChange={e => setUpdateForm(f => ({...f, completed_date: e.target.value}))}
@@ -413,27 +409,15 @@ export default function MantenimientoPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas</label>
+              <FieldLabel>Notas</FieldLabel>
               <textarea rows={2}
                 value={updateForm.notes}
                 onChange={e => setUpdateForm(f => ({...f, notes: e.target.value}))}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none" />
             </div>
-
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => { setTab('lista'); setSelected(null) }}
-                className="flex-1 border border-slate-200 text-slate-600 text-sm font-medium py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                Cancelar
-              </button>
-              <button onClick={actualizarOrden} disabled={saving}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5">
-                {saving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                Actualizar orden
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   )
 }

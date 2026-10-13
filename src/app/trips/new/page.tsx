@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2 } from 'lucide-react'
-import Link from 'next/link'
+import { X, Loader2 } from 'lucide-react'
 import { TRIP_TYPE_LABELS } from '@/lib/utils/index'
+import { FieldLabel } from '@/components/ui/Tooltip'
 
 export default function NewTripPage() {
   const router = useRouter()
@@ -54,54 +54,95 @@ export default function NewTripPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/trips" className="btn-secondary p-2"><ArrowLeft className="w-4 h-4" /></Link>
-        <h1 className="text-2xl font-bold text-gray-900">Nuevo viaje</h1>
-      </div>
-      <form onSubmit={handleSubmit} className="card p-6 space-y-5">
-        <div>
-          <label className="label">Tipo de servicio *</label>
-          <select className="input" value={form.type} onChange={e => set('type', e.target.value)}>
-            {Object.entries(TRIP_TYPE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="label">Origen *</label><input className="input" placeholder="Ej: Ciudad de México" value={form.origin_label} onChange={e => set('origin_label', e.target.value)} /></div>
-          <div><label className="label">Destino *</label><input className="input" placeholder="Ej: Cancún" value={form.destination_label} onChange={e => set('destination_label', e.target.value)} /></div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="label">Fecha *</label><input type="date" className="input" value={form.departure_date} onChange={e => set('departure_date', e.target.value)} min={new Date().toISOString().split('T')[0]} /></div>
-          <div><label className="label">Hora de salida *</label><input type="time" className="input" value={form.departure_time} onChange={e => set('departure_time', e.target.value)} /></div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="label">Unidad</label>
-            <select className="input" value={form.vehicle_id} onChange={e => onVehicleChange(e.target.value)}>
-              <option value="">— Sin asignar —</option>
-              {vehicles.map(v => <option key={v.id} value={v.id}>{v.plate}{v.economic_number ? ` · #${v.economic_number}` : ''} ({v.capacity})</option>)}
-            </select>
-          </div>
-          <div><label className="label">Capacidad *</label><input type="number" className="input" min="1" max="300" placeholder="45" value={form.capacity} onChange={e => set('capacity', e.target.value)} /></div>
-        </div>
-        <div>
-          <label className="label">Operador</label>
-          <select className="input" value={form.driver_id} onChange={e => set('driver_id', e.target.value)}>
-            <option value="">— Sin asignar —</option>
-            {drivers.map(d => <option key={d.id} value={d.id}>{d.first_name} {d.last_name}</option>)}
-          </select>
-        </div>
-        {['tourism','rental','charter','executive','event'].includes(form.type) && (
-          <div><label className="label">Cliente / Grupo</label><input className="input" placeholder="Nombre del cliente o grupo" value={form.client_name} onChange={e => set('client_name', e.target.value)} /></div>
-        )}
-        <div><label className="label">Notas</label><textarea className="input resize-none" rows={3} placeholder="Instrucciones especiales..." value={form.notes} onChange={e => set('notes', e.target.value)} /></div>
-        <div className="flex gap-3 pt-2">
-          <Link href="/trips" className="btn-secondary flex-1 justify-center">Cancelar</Link>
-          <button type="submit" className="btn-primary flex-1" disabled={loading}>
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creando...</> : 'Crear viaje'}
+    <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[600px] flex flex-col" style={{ animation: 'modal-in 0.15s ease-out' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h1 className="text-[15px] font-semibold text-slate-800">Nuevo viaje</h1>
+          <button onClick={() => router.back()} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <X size={16} />
           </button>
         </div>
-      </form>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[80vh] p-6 space-y-5">
+          <div>
+            <FieldLabel required tooltip="Define la categoría del viaje para la operación y facturación">
+              Tipo de servicio
+            </FieldLabel>
+            <select className="input" value={form.type} onChange={e => set('type', e.target.value)}>
+              {Object.entries(TRIP_TYPE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel required>Origen</FieldLabel>
+              <input className="input" placeholder="Ej: Ciudad de México" value={form.origin_label} onChange={e => set('origin_label', e.target.value)} />
+            </div>
+            <div>
+              <FieldLabel required>Destino</FieldLabel>
+              <input className="input" placeholder="Ej: Cancún" value={form.destination_label} onChange={e => set('destination_label', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel required>Fecha</FieldLabel>
+              <input type="date" className="input" value={form.departure_date} onChange={e => set('departure_date', e.target.value)} min={new Date().toISOString().split('T')[0]} />
+            </div>
+            <div>
+              <FieldLabel required>Hora de salida</FieldLabel>
+              <input type="time" className="input" value={form.departure_time} onChange={e => set('departure_time', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel>Unidad</FieldLabel>
+              <select className="input" value={form.vehicle_id} onChange={e => onVehicleChange(e.target.value)}>
+                <option value="">— Sin asignar —</option>
+                {vehicles.map(v => <option key={v.id} value={v.id}>{v.plate}{v.economic_number ? ` · #${v.economic_number}` : ''} ({v.capacity})</option>)}
+              </select>
+            </div>
+            <div>
+              <FieldLabel required tooltip="Se llena automáticamente al seleccionar la unidad">
+                Capacidad
+              </FieldLabel>
+              <input type="number" className="input" min="1" max="300" placeholder="45" value={form.capacity} onChange={e => set('capacity', e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <FieldLabel tooltip="Solo aparecen operadores con licencia vigente">
+              Operador
+            </FieldLabel>
+            <select className="input" value={form.driver_id} onChange={e => set('driver_id', e.target.value)}>
+              <option value="">— Sin asignar —</option>
+              {drivers.map(d => <option key={d.id} value={d.id}>{d.first_name} {d.last_name}</option>)}
+            </select>
+          </div>
+          {['tourism','rental','charter','executive','event'].includes(form.type) && (
+            <div>
+              <FieldLabel>Cliente / Grupo</FieldLabel>
+              <input className="input" placeholder="Nombre del cliente o grupo" value={form.client_name} onChange={e => set('client_name', e.target.value)} />
+            </div>
+          )}
+          <div>
+            <FieldLabel>Notas</FieldLabel>
+            <textarea className="input resize-none" rows={3} placeholder="Instrucciones especiales..." value={form.notes} onChange={e => set('notes', e.target.value)} />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => router.back()} className="btn-secondary flex-1 justify-center">Cancelar</button>
+            <button type="submit" className="btn-primary flex-1" disabled={loading}>
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creando...</> : 'Crear viaje'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <style>{`
+        @keyframes modal-in {
+          from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </div>
   )
 }
