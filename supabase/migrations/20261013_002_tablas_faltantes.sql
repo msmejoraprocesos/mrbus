@@ -23,7 +23,13 @@ CREATE TABLE IF NOT EXISTS quotations (
 ALTER TABLE quotations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_quotations" ON quotations
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_quotations_lead_id ON quotations(lead_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='quotations' AND column_name='lead_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_quotations_lead_id') THEN
+      EXECUTE 'CREATE INDEX idx_quotations_lead_id ON quotations(lead_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_quotations_updated_at
   BEFORE UPDATE ON quotations FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -65,7 +71,13 @@ CREATE TABLE IF NOT EXISTS employee_leaves (
 ALTER TABLE employee_leaves ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_employee_leaves" ON employee_leaves
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_employee_leaves_employee_id ON employee_leaves(employee_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_leaves' AND column_name='employee_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_employee_leaves_employee_id') THEN
+      EXECUTE 'CREATE INDEX idx_employee_leaves_employee_id ON employee_leaves(employee_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_employee_leaves_updated_at
   BEFORE UPDATE ON employee_leaves FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -87,7 +99,13 @@ CREATE TABLE IF NOT EXISTS payroll_settlements (
 ALTER TABLE payroll_settlements ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_payroll_settlements" ON payroll_settlements
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_payroll_settlements_employee_id ON payroll_settlements(employee_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payroll_settlements' AND column_name='employee_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_payroll_settlements_employee_id') THEN
+      EXECUTE 'CREATE INDEX idx_payroll_settlements_employee_id ON payroll_settlements(employee_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_payroll_settlements_updated_at
   BEFORE UPDATE ON payroll_settlements FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -108,8 +126,20 @@ CREATE TABLE IF NOT EXISTS driver_advances (
 ALTER TABLE driver_advances ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_driver_advances" ON driver_advances
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_driver_advances_driver_id ON driver_advances(driver_id);
-CREATE INDEX IF NOT EXISTS idx_driver_advances_trip_id ON driver_advances(trip_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='driver_advances' AND column_name='driver_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_driver_advances_driver_id') THEN
+      EXECUTE 'CREATE INDEX idx_driver_advances_driver_id ON driver_advances(driver_id)';
+    END IF;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='driver_advances' AND column_name='trip_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_driver_advances_trip_id') THEN
+      EXECUTE 'CREATE INDEX idx_driver_advances_trip_id ON driver_advances(trip_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_driver_advances_updated_at
   BEFORE UPDATE ON driver_advances FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -139,8 +169,20 @@ CREATE TABLE IF NOT EXISTS rental_services (
 ALTER TABLE rental_services ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_rental_services" ON rental_services
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_rental_services_contract_id ON rental_services(contract_id);
-CREATE INDEX IF NOT EXISTS idx_rental_services_trip_id ON rental_services(trip_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rental_services' AND column_name='contract_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_rental_services_contract_id') THEN
+      EXECUTE 'CREATE INDEX idx_rental_services_contract_id ON rental_services(contract_id)';
+    END IF;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rental_services' AND column_name='trip_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_rental_services_trip_id') THEN
+      EXECUTE 'CREATE INDEX idx_rental_services_trip_id ON rental_services(trip_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_rental_services_updated_at
   BEFORE UPDATE ON rental_services FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -164,7 +206,13 @@ CREATE TABLE IF NOT EXISTS compliance_alerts (
 ALTER TABLE compliance_alerts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_compliance_alerts" ON compliance_alerts
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_compliance_alerts_status ON compliance_alerts(status);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='compliance_alerts' AND column_name='status') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_compliance_alerts_status') THEN
+      EXECUTE 'CREATE INDEX idx_compliance_alerts_status ON compliance_alerts(status)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_compliance_alerts_updated_at
   BEFORE UPDATE ON compliance_alerts FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -208,7 +256,13 @@ CREATE POLICY "auth_sel_asset_depreciation_log" ON asset_depreciation_log
   FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "auth_ins_asset_depreciation_log" ON asset_depreciation_log
   FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_asset_depreciation_log_asset_id ON asset_depreciation_log(asset_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='asset_depreciation_log' AND column_name='asset_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_asset_depreciation_log_asset_id') THEN
+      EXECUTE 'CREATE INDEX idx_asset_depreciation_log_asset_id ON asset_depreciation_log(asset_id)';
+    END IF;
+  END IF;
+END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- COMPRAS — suppliers
@@ -273,8 +327,20 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_purchase_orders" ON purchase_orders
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier_id ON purchase_orders(supplier_id);
-CREATE INDEX IF NOT EXISTS idx_purchase_orders_request_id ON purchase_orders(request_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='purchase_orders' AND column_name='supplier_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_purchase_orders_supplier_id') THEN
+      EXECUTE 'CREATE INDEX idx_purchase_orders_supplier_id ON purchase_orders(supplier_id)';
+    END IF;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='purchase_orders' AND column_name='request_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_purchase_orders_request_id') THEN
+      EXECUTE 'CREATE INDEX idx_purchase_orders_request_id ON purchase_orders(request_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_purchase_orders_updated_at
   BEFORE UPDATE ON purchase_orders FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -316,7 +382,13 @@ CREATE TABLE IF NOT EXISTS inventory_items (
 ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_inventory_items" ON inventory_items
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_inventory_items_warehouse_id ON inventory_items(warehouse_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventory_items' AND column_name='warehouse_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_inventory_items_warehouse_id') THEN
+      EXECUTE 'CREATE INDEX idx_inventory_items_warehouse_id ON inventory_items(warehouse_id)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_inventory_items_updated_at
   BEFORE UPDATE ON inventory_items FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -339,7 +411,13 @@ CREATE POLICY "auth_sel_inventory_movements" ON inventory_movements
   FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "auth_ins_inventory_movements" ON inventory_movements
   FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_inventory_movements_item_id ON inventory_movements(item_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventory_movements' AND column_name='item_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_inventory_movements_item_id') THEN
+      EXECUTE 'CREATE INDEX idx_inventory_movements_item_id ON inventory_movements(item_id)';
+    END IF;
+  END IF;
+END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- FLUJO APROBACIONES — approval_requests
@@ -360,7 +438,13 @@ CREATE TABLE IF NOT EXISTS approval_requests (
 ALTER TABLE approval_requests ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_all_approval_requests" ON approval_requests
   FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_approval_requests_status ON approval_requests(status);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='approval_requests' AND column_name='status') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_approval_requests_status') THEN
+      EXECUTE 'CREATE INDEX idx_approval_requests_status ON approval_requests(status)';
+    END IF;
+  END IF;
+END $$;
 CREATE TRIGGER trg_approval_requests_updated_at
   BEFORE UPDATE ON approval_requests FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
@@ -401,7 +485,13 @@ CREATE POLICY "auth_sel_petty_cash_movements" ON petty_cash_movements
   FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "auth_ins_petty_cash_movements" ON petty_cash_movements
   FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_petty_cash_movements_petty_cash_id ON petty_cash_movements(petty_cash_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='petty_cash_movements' AND column_name='petty_cash_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_petty_cash_movements_petty_cash_id') THEN
+      EXECUTE 'CREATE INDEX idx_petty_cash_movements_petty_cash_id ON petty_cash_movements(petty_cash_id)';
+    END IF;
+  END IF;
+END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- CONTABILIDAD — accounting_entries
@@ -467,8 +557,20 @@ CREATE POLICY "auth_sel_boarding_events" ON boarding_events
   FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "auth_ins_boarding_events" ON boarding_events
   FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_boarding_events_route_id ON boarding_events(route_id);
-CREATE INDEX IF NOT EXISTS idx_boarding_events_employee_id ON boarding_events(employee_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='boarding_events' AND column_name='route_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_boarding_events_route_id') THEN
+      EXECUTE 'CREATE INDEX idx_boarding_events_route_id ON boarding_events(route_id)';
+    END IF;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='boarding_events' AND column_name='employee_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_boarding_events_employee_id') THEN
+      EXECUTE 'CREATE INDEX idx_boarding_events_employee_id ON boarding_events(employee_id)';
+    END IF;
+  END IF;
+END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- MENSAJERIA — shipping_events
@@ -486,7 +588,13 @@ CREATE POLICY "auth_sel_shipping_events" ON shipping_events
   FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "auth_ins_shipping_events" ON shipping_events
   FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_shipping_events_shipping_order_id ON shipping_events(shipping_order_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='shipping_events' AND column_name='shipping_order_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_shipping_events_shipping_order_id') THEN
+      EXECUTE 'CREATE INDEX idx_shipping_events_shipping_order_id ON shipping_events(shipping_order_id)';
+    END IF;
+  END IF;
+END $$;
 
 -- ────────────────────────────────────────────────────────────
 -- VIAJES — trip_passengers
@@ -505,4 +613,10 @@ CREATE POLICY "auth_sel_trip_passengers" ON trip_passengers
   FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "auth_ins_trip_passengers" ON trip_passengers
   FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_trip_passengers_trip_id ON trip_passengers(trip_id);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trip_passengers' AND column_name='trip_id') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname='idx_trip_passengers_trip_id') THEN
+      EXECUTE 'CREATE INDEX idx_trip_passengers_trip_id ON trip_passengers(trip_id)';
+    END IF;
+  END IF;
+END $$;
