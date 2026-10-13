@@ -41,6 +41,7 @@ const LABELS: Record<string, string> = {
   operadores:   'Operadores',
   rh:           'Recursos Humanos',
   liquidaciones:'Liquidaciones',
+  nomina:       'Nómina',
   cxc:          'Cuentas por Cobrar',
   cxp:          'Cuentas por Pagar',
   caja:         'Caja Chica',
