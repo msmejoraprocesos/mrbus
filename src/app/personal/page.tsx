@@ -1,53 +1,43 @@
 import { Metadata } from 'next'
-export const metadata: Metadata = { title: 'Transporte de Personal' }
+import SuitePage from '@/components/ui/SuitePage'
+import { MapPin, Navigation, Clock, Users } from 'lucide-react'
+
+export const metadata: Metadata = { title: 'Transporte Personal — MrBus' }
+
 export default function Page() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ backgroundColor: '#DCFCE7' }}>
-            🏭
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#166534' }}>Transporte de Personal</h1>
-            <p className="text-gray-400 text-sm mt-0.5">3 módulos en esta suite</p>
-          </div>
-        </div>
-        <div className="flex gap-3 text-xs text-gray-500">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>3 disponibles
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-gray-300 inline-block"></span>0 próximamente
-          </span>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <a href="/personal/rutas" className="block rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group" style={{ backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>🏭</div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-green-700 bg-green-50 border-green-200">✅ Disponible</span>
-          </div>
-          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Convenios / Rutas</h3>
-          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Contratos de transporte recurrente</p>
-        </a>
-        <a href="/personal/paradas" className="block rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group" style={{ backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>📍</div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-green-700 bg-green-50 border-green-200">✅ Disponible</span>
-          </div>
-          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Control de Paradas</h3>
-          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Paradas por ruta y empleados asignados</p>
-        </a>
-        <a href="/personal/asistencia" className="block rounded-xl border p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group" style={{ backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>📊</div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full border font-semibold text-green-700 bg-green-50 border-green-200">✅ Disponible</span>
-          </div>
-          <h3 className="font-semibold text-sm mb-1" style={{ color: '#166534' }}>Asistencia</h3>
-          <p className="text-xs leading-relaxed" style={{ color: '#166534', opacity: 0.6 }}>Reporte de abordaje por empleado</p>
-        </a>
-      </div>
-    </div>
+    <SuitePage
+      title="Transporte Personal"
+      subtitle="Gestión de rutas fijas, paradas y asistencia de pasajeros"
+      color="#0369A1"
+      lightBg="#E0F2FE"
+      icon={Users}
+      modules={[
+        {
+          name: 'Rutas',
+          desc: 'Definición de rutas fijas de transporte personal. Origen, destino, paradas intermedias y horarios.',
+          href: '/personal/rutas',
+          icon: MapPin,
+          status: 'active',
+          kpis: ['Origen', 'Destino', 'Horarios'],
+        },
+        {
+          name: 'Control de Paradas',
+          desc: 'Gestión de paradas por ruta. Coordenadas GPS, tiempo estimado de llegada y pasajeros asignados.',
+          href: '/personal/paradas',
+          icon: Navigation,
+          status: 'active',
+          kpis: ['GPS', 'Paradas', 'Pasajeros'],
+        },
+        {
+          name: 'Asistencia',
+          desc: 'Registro de asistencia de pasajeros por servicio. Abordajes, inasistencias y reportes por período.',
+          href: '/personal/asistencia',
+          icon: Clock,
+          status: 'beta',
+          kpis: ['Abordajes', 'Inasistencias', 'Reportes'],
+        },
+      ]}
+    />
   )
 }

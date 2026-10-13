@@ -6,33 +6,59 @@ import Image from 'next/image'
 import {
   LayoutDashboard, MapPin, Truck, UserCircle, Settings,
   Briefcase, Users, Package, DollarSign, BarChart3,
-  ChevronLeft, ChevronRight, Building2, FileText, Wrench
+  ChevronLeft, ChevronRight, Building2, FileText, Wrench,
+  Bus, Ship, Star, Receipt, Boxes
 } from 'lucide-react'
 import { useState } from 'react'
 
+/* ─── Paleta de colores MrBus ──────────────────────────────────── */
+const C = {
+  sidebar:  '#0F172A',   // Azul marino profundo — fondo sidebar
+  hover:    '#1E293B',   // Hover sobre ítem
+  active:   '#1E40AF',   // Ítem activo — azul MrBus
+  accent:   '#22C55E',   // Verde MrBus
+  text:     '#CBD5E1',   // Texto normal
+  textMute: '#64748B',   // Texto de grupos/labels
+  border:   '#1E293B',   // Separador
+  white:    '#FFFFFF',
+}
+
+/* ─── Mapa de color por suite ───────────────────────────────────── */
+const SUITE_COLORS: Record<string, { dot: string; activeBg: string }> = {
+  '/comercial':  { dot: '#3B82F6', activeBg: 'rgba(59,130,246,0.15)' },
+  '/operacion':  { dot: '#22C55E', activeBg: 'rgba(34,197,94,0.15)' },
+  '/turismo':    { dot: '#06B6D4', activeBg: 'rgba(6,182,212,0.15)' },
+  '/personal':   { dot: '#10B981', activeBg: 'rgba(16,185,129,0.15)' },
+  '/renta':      { dot: '#F97316', activeBg: 'rgba(249,115,22,0.15)' },
+  '/paqueteria': { dot: '#94A3B8', activeBg: 'rgba(148,163,184,0.15)' },
+  '/flota':      { dot: '#A855F7', activeBg: 'rgba(168,85,247,0.15)' },
+  '/rrhh':       { dot: '#F43F5E', activeBg: 'rgba(244,63,94,0.15)' },
+  '/finanzas':   { dot: '#14B8A6', activeBg: 'rgba(20,184,166,0.15)' },
+  '/admin':      { dot: '#6B7280', activeBg: 'rgba(107,114,128,0.15)' },
+  '/fiscal':     { dot: '#EF4444', activeBg: 'rgba(239,68,68,0.15)' },
+  '/bi':         { dot: '#6366F1', activeBg: 'rgba(99,102,241,0.15)' },
+  '/dashboard':  { dot: '#94A3B8', activeBg: 'rgba(148,163,184,0.12)' },
+  '/settings':   { dot: '#94A3B8', activeBg: 'rgba(148,163,184,0.12)' },
+}
+
 const NAV = [
-  { href: '/dashboard',  label: 'Dashboard',            icon: LayoutDashboard, group: null,       color: '#6B7280', bg: '#F3F4F6' },
-  { href: '/comercial',  label: 'Comercial',             icon: Briefcase,       group: 'Negocio',  color: '#1D4ED8', bg: '#DBEAFE' },
-  { href: '/operacion',  label: 'Operación',             icon: MapPin,          group: 'Negocio',  color: '#15803D', bg: '#DCFCE7' },
-  { href: '/turismo',    label: 'Turismo',               icon: Building2,       group: 'Negocio',  color: '#0369A1', bg: '#E0F2FE' },
-  { href: '/personal',   label: 'Personal',              icon: Users,           group: 'Negocio',  color: '#15803D', bg: '#DCFCE7' },
-  { href: '/renta',      label: 'Renta',                 icon: Truck,           group: 'Negocio',  color: '#C2410C', bg: '#FFEDD5' },
-  { href: '/paqueteria', label: 'Paquetería',            icon: Package,         group: 'Negocio',  color: '#475569', bg: '#F1F5F9' },
-  { href: '/flota',      label: 'Flota',                 icon: Truck,           group: 'Recursos', color: '#7C3AED', bg: '#EDE9FE' },
-  { href: '/rrhh',       label: 'RRHH',                  icon: UserCircle,      group: 'Recursos', color: '#BE123C', bg: '#FFE4E6' },
-  { href: '/finanzas',   label: 'Finanzas',              icon: DollarSign,      group: 'Recursos', color: '#0F766E', bg: '#CCFBF1' },
-  { href: '/admin',      label: 'Administración',        icon: Wrench,          group: 'Recursos', color: '#374151', bg: '#F1F5F9' },
-  { href: '/fiscal',     label: 'Fiscal',                icon: FileText,        group: 'Recursos', color: '#C2410C', bg: '#FFEDD5' },
-  { href: '/bi',         label: 'Inteligencia',          icon: BarChart3,       group: 'Análisis', color: '#4338CA', bg: '#E0E7FF' },
-  { href: '/settings',   label: 'Configuración',         icon: Settings,        group: null,       color: '#6B7280', bg: '#F3F4F6' },
+  { href: '/dashboard',  label: 'Dashboard',       icon: LayoutDashboard, group: null        },
+  { href: '/comercial',  label: 'Comercial',        icon: Briefcase,       group: 'Negocio'   },
+  { href: '/operacion',  label: 'Operación',        icon: Bus,             group: 'Negocio'   },
+  { href: '/turismo',    label: 'Turismo',           icon: Star,            group: 'Negocio'   },
+  { href: '/personal',   label: 'Personal',          icon: Users,           group: 'Negocio'   },
+  { href: '/renta',      label: 'Renta',             icon: Truck,           group: 'Negocio'   },
+  { href: '/paqueteria', label: 'Paquetería',        icon: Package,         group: 'Negocio'   },
+  { href: '/flota',      label: 'Flota',             icon: Wrench,          group: 'Recursos'  },
+  { href: '/rrhh',       label: 'RRHH',              icon: UserCircle,      group: 'Recursos'  },
+  { href: '/finanzas',   label: 'Finanzas',          icon: DollarSign,      group: 'Recursos'  },
+  { href: '/admin',      label: 'Administración',   icon: Boxes,           group: 'Recursos'  },
+  { href: '/fiscal',     label: 'Fiscal',            icon: Receipt,         group: 'Recursos'  },
+  { href: '/bi',         label: 'Inteligencia',      icon: BarChart3,       group: 'Análisis'  },
+  { href: '/settings',   label: 'Configuración',     icon: Settings,        group: null        },
 ]
 
 const GROUPS = ['Negocio', 'Recursos', 'Análisis']
-const GROUP_LABEL_COLOR: Record<string, string> = {
-  'Negocio':  'text-blue-600',
-  'Recursos': 'text-purple-600',
-  'Análisis': 'text-indigo-600',
-}
 
 export default function AdminSidebar({ userRole }: { userRole: string }) {
   const pathname = usePathname()
@@ -43,64 +69,120 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
     const active = item.href === '/dashboard'
       ? pathname === item.href
       : pathname.startsWith(item.href)
+    const colors = SUITE_COLORS[item.href] ?? { dot: '#94A3B8', activeBg: 'rgba(148,163,184,0.12)' }
+
     return (
-      <Link href={item.href} title={collapsed ? item.label : undefined}
+      <Link
+        href={item.href}
+        title={collapsed ? item.label : undefined}
+        style={active ? { backgroundColor: colors.activeBg } : undefined}
         className={cn(
-          'flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all',
-          collapsed && 'justify-center',
-          active ? 'shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+          'flex items-center gap-2.5 px-2 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 group relative',
+          collapsed ? 'justify-center' : '',
+          active
+            ? 'text-white'
+            : 'text-slate-400 hover:text-slate-200',
         )}
-        style={active ? { backgroundColor: item.bg, color: item.color } : {}}>
-        <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0')}
-          style={active ? { backgroundColor: item.color, color: '#fff' } : { backgroundColor: 'transparent' }}>
-          <Icon className="w-3.5 h-3.5" />
-        </div>
-        {!collapsed && <span className="truncate">{item.label}</span>}
-        {!collapsed && active && (
-          <div className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: item.color }} />
+        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = C.hover }}
+        onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
+      >
+        {/* Indicador de actividad */}
+        {active && !collapsed && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r"
+            style={{ backgroundColor: colors.dot }}
+          />
+        )}
+
+        {/* Ícono con fondo de color de suite */}
+        <span
+          className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center transition-all"
+          style={{
+            backgroundColor: active ? colors.dot : 'rgba(255,255,255,0.06)',
+            color: active ? '#fff' : colors.dot,
+          }}
+        >
+          <Icon size={14} />
+        </span>
+
+        {!collapsed && (
+          <span className="truncate leading-none">{item.label}</span>
+        )}
+
+        {/* Tooltip al colapsar */}
+        {collapsed && (
+          <span className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+            {item.label}
+          </span>
         )}
       </Link>
     )
   }
 
+  const standalone = NAV.filter(n => !n.group)
+  const grouped = GROUPS.map(g => ({ group: g, items: NAV.filter(n => n.group === g) }))
+
   return (
-    <aside className={cn('hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-200 relative flex-shrink-0')}
-      style={{ width: collapsed ? 60 : 216 }}>
-      <div className={cn('flex items-center border-b border-gray-100 py-3', collapsed ? 'justify-center px-2' : 'px-3')}>
-        {collapsed ? (
-          <div className="w-8 h-8 rounded-lg bg-[#0F2D52] flex items-center justify-center">
-            <span className="text-white font-bold text-xs">MB</span>
-          </div>
+    <aside
+      style={{ backgroundColor: C.sidebar, borderRightColor: C.border, width: collapsed ? 56 : 200 }}
+      className="flex-shrink-0 h-screen flex flex-col border-r transition-all duration-200 overflow-hidden"
+    >
+      {/* Logo */}
+      <div className={cn(
+        'flex items-center border-b px-3 py-3 flex-shrink-0',
+        collapsed ? 'justify-center' : 'gap-2'
+      )}
+        style={{ borderBottomColor: C.border }}
+      >
+        {!collapsed ? (
+          <Image src="/logo-mrbus.png" alt="MrBus" width={120} height={36} className="object-contain" />
         ) : (
-          <Image src="/logo-mrbus.png" alt="MrBus" width={144} height={58} className="object-contain" priority />
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1D4ED8' }}>
+            <Bus size={16} className="text-white" />
+          </div>
         )}
       </div>
-      <nav className="flex-1 overflow-y-auto py-2 px-1.5 space-y-0.5">
-        <NavItem item={NAV[0]} />
-        {GROUPS.map(group => (
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-1.5 space-y-0.5">
+        {/* Items sin grupo */}
+        {standalone.map(item => <NavItem key={item.href} item={item} />)}
+
+        {/* Grupos */}
+        {grouped.map(({ group, items }) => (
           <div key={group} className="mt-3">
             {!collapsed && (
-              <p className={cn('text-[9px] font-bold uppercase tracking-widest px-2 mb-1', GROUP_LABEL_COLOR[group])}>
+              <p
+                className="px-2 py-1 text-[10px] font-semibold tracking-widest uppercase select-none"
+                style={{ color: C.textMute }}
+              >
                 {group}
               </p>
             )}
-            {collapsed && <div className="border-t border-gray-100 my-2" />}
-            <div className="space-y-0.5">
-              {NAV.filter(i => i.group === group).map(item => (
-                <NavItem key={item.href} item={item} />
-              ))}
-            </div>
+            {collapsed && <div className="border-t mx-1 my-1.5" style={{ borderColor: C.border }} />}
+            {items.map(item => <NavItem key={item.href} item={item} />)}
           </div>
         ))}
-        <div className="mt-3 border-t border-gray-100 pt-2">
-          <NavItem item={NAV[NAV.length - 1]} />
-        </div>
       </nav>
-      <button onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md z-10 transition-all">
-        {collapsed ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronLeft className="w-3 h-3 text-gray-400" />}
-      </button>
+
+      {/* Footer — collapse toggle */}
+      <div
+        className="flex-shrink-0 border-t p-2"
+        style={{ borderTopColor: C.border }}
+      >
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all',
+            'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60'
+          )}
+        >
+          {collapsed
+            ? <ChevronRight size={14} className="mx-auto" />
+            : <><ChevronLeft size={14} /><span>Colapsar</span></>
+          }
+        </button>
+      </div>
     </aside>
   )
 }
