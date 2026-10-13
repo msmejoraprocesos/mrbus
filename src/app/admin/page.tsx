@@ -34,15 +34,16 @@ export default function Page() {
           desc: 'Control de almacenes de refacciones y materiales. Entradas, salidas y stock mínimo.',
           href: '/admin/almacenes',
           icon: Warehouse,
-          status: 'beta',
-          kpis: ['Stock', 'Entradas', 'Salidas'],
+          status: 'active',
+          kpis: ['Almacenes', 'Bitácora', 'Transferencia'],
         },
         {
           name: 'Inventarios',
-          desc: 'Toma física de inventario. Comparativo contra existencias en sistema y ajustes.',
+          desc: 'Control de refacciones, consumibles y herramientas. Semáforo de stock mínimo y máximo.',
           href: '/admin/inventarios',
           icon: Box,
-          status: 'soon',
+          status: 'active',
+          kpis: ['Stock', 'Semáforo', 'Ubicación'],
         },
       ]}
     />
