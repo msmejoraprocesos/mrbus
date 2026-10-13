@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import SuitePage from '@/components/ui/SuitePage'
-import { Users, FileText, FileSignature, Briefcase } from 'lucide-react'
+import { Users, FileText, FileSignature, Briefcase, CalendarCheck } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Comercial — MrBus' }
 
@@ -36,6 +36,14 @@ export default function Page() {
           icon: FileSignature,
           status: 'active',
           kpis: ['Stepper', 'Firma', 'Activación'],
+        },
+        {
+          name: 'Seguimiento',
+          desc: 'Agenda comercial con vistas de mes, semana y día. Registra llamadas, citas y WhatsApps vinculadas a cada lead.',
+          href: '/comercial/seguimiento',
+          icon: CalendarCheck,
+          status: 'active',
+          kpis: ['Calendario', 'Pendientes', 'Leads'],
         },
       ]}
     />
