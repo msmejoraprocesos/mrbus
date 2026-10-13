@@ -50,6 +50,7 @@ const LABELS: Record<string, string> = {
   presupuestos: 'Presupuestos',
   activos:      'Activo Fijo',
   compras:      'Compras',
+  aprobaciones: 'Aprobaciones',
   almacenes:    'Almacenes',
   inventarios:  'Inventarios',
   facturas:     'Facturación',
