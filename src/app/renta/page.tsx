@@ -1,20 +1,26 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { CalendarClock, Gauge, FileCheck, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Renta de Vehículos — MrBus' }
+export default function Page() {
+  const [activeRentals, setActiveRentals] = useState<any[]>([])
+  const [completedRentals, setCompletedRentals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const [rentalRes, completedRes] = await Promise.all([
+      supabase.from('rental_services').select('id, status, extra_hours, extra_km').in('status', ['active', 'confirmed']),
+      supabase.from('rental_services').select('id, status, extra_hours, extra_km').in('status', ['completed', 'billed']),
+    ])
+    setActiveRentals(rentalRes.data ?? [])
+    setCompletedRentals(completedRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const [rentalRes, completedRes] = await Promise.all([
-    supabase.from('rental_services').select('id, status, extra_hours, extra_km').in('status', ['active', 'confirmed']),
-    supabase.from('rental_services').select('id, status, extra_hours, extra_km').in('status', ['completed', 'billed']),
-  ])
-
-  const activeRentals = rentalRes.data ?? []
-  const completedRentals = completedRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const activeCount = activeRentals.length
   const withExcedents = completedRentals.filter(r => (r.extra_hours ?? 0) > 0 || (r.extra_km ?? 0) > 0).length
@@ -42,6 +48,8 @@ export default async function Page() {
       alert: withExcedents > 0,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">

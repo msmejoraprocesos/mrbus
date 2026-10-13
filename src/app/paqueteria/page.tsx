@@ -1,20 +1,26 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { Package, Truck, Archive, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Paquetería — MrBus' }
+export default function Page() {
+  const [guias, setGuias] = useState<any[]>([])
+  const [enTransito, setEnTransito] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const [guiasRes, entregasRes] = await Promise.all([
+      supabase.from('shipping_orders').select('id, status').order('created_at', { ascending: false }).limit(200),
+      supabase.from('shipping_orders').select('id, status').in('status', ['in_transit', 'out_for_delivery']),
+    ])
+    setGuias(guiasRes.data ?? [])
+    setEnTransito(entregasRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const [guiasRes, entregasRes] = await Promise.all([
-    supabase.from('shipping_orders').select('id, status').order('created_at', { ascending: false }).limit(200),
-    supabase.from('shipping_orders').select('id, status').in('status', ['in_transit', 'out_for_delivery']),
-  ])
-
-  const guias = guiasRes.data ?? []
-  const enTransito = entregasRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const totalGuias = guias.length
   const pendientes = guias.filter(g => g.status === 'pending' || g.status === 'received').length
@@ -53,6 +59,8 @@ export default async function Page() {
       alert: false,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">

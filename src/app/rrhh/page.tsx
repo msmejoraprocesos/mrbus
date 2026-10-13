@@ -1,27 +1,33 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { UserCircle, Users2, Banknote, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'RRHH — MrBus' }
+export default function Page() {
+  const [drivers, setDrivers] = useState<any[]>([])
+  const [staff, setStaff] = useState<any[]>([])
+  const [liquidations, setLiquidations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const [driversRes, staffRes, liquidRes] = await Promise.all([
+      supabase.from('drivers').select('id, status, license_expiry').order('last_name'),
+      supabase.from('employees').select('id, status').eq('status', 'active'),
+      supabase.from('payroll_settlements').select('id, status, created_at').order('created_at', { ascending: false }).limit(10),
+    ])
+    setDrivers(driversRes.data ?? [])
+    setStaff(staffRes.data ?? [])
+    setLiquidations(liquidRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const [driversRes, staffRes, liquidRes] = await Promise.all([
-    supabase.from('drivers').select('id, status, license_expiry').order('last_name'),
-    supabase.from('employees').select('id, status').eq('status', 'active'),
-    supabase.from('payroll_settlements').select('id, status, created_at').order('created_at', { ascending: false }).limit(10),
-  ])
-
-  const drivers = driversRes.data ?? []
-  const staff = staffRes.data ?? []
-  const liquidations = liquidRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const activeDrivers = drivers.filter(d => d.status === 'active').length
   const inactiveDrivers = drivers.filter(d => d.status !== 'active').length
 
-  // Check for expiring licenses (within 30 days)
   const today = new Date()
   const in30 = new Date(today)
   in30.setDate(today.getDate() + 30)
@@ -66,6 +72,8 @@ export default async function Page() {
       alert: pendingLiquidations > 0,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">

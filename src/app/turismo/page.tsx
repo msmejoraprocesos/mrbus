@@ -1,24 +1,30 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { Ticket, QrCode, Package2, Star, Users, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Turismo — MrBus' }
+export default function Page() {
+  const [reservations, setReservations] = useState<any[]>([])
+  const [boardingToday, setBoardingToday] = useState<any[]>([])
+  const [agencyTrips, setAgencyTrips] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const [reservationsRes, boardingRes, agencyTripsRes] = await Promise.all([
+      supabase.from('seat_reservations').select('id, status, trip_id').eq('status', 'confirmed'),
+      supabase.from('boarding_events').select('id, created_at').gte('created_at', todayStr),
+      supabase.from('agency_trips').select('id, total_seats, sold_seats').eq('status', 'open'),
+    ])
+    setReservations(reservationsRes.data ?? [])
+    setBoardingToday(boardingRes.data ?? [])
+    setAgencyTrips(agencyTripsRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const todayStr = new Date().toISOString().slice(0, 10)
-
-  const [reservationsRes, boardingRes, agencyTripsRes] = await Promise.all([
-    supabase.from('seat_reservations').select('id, status, trip_id').eq('status', 'confirmed'),
-    supabase.from('boarding_events').select('id, created_at').gte('created_at', todayStr),
-    supabase.from('agency_trips').select('id, total_seats, sold_seats').eq('status', 'open'),
-  ])
-
-  const reservations = reservationsRes.data ?? []
-  const boardingToday = boardingRes.data ?? []
-  const agencyTrips = agencyTripsRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const confirmedReservations = reservations.length
   const boardingCount = boardingToday.length
@@ -57,6 +63,8 @@ export default async function Page() {
       alert: false,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">

@@ -1,23 +1,27 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { MapPin, Navigation, Clock, Users, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Transporte Personal — MrBus' }
+export default function Page() {
+  const [routes, setRoutes] = useState<any[]>([])
+  const [boardingToday, setBoardingToday] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const [routesRes, boardingRes] = await Promise.all([
+      supabase.from('agreement_routes').select('id').limit(100),
+      supabase.from('boarding_events').select('id, boarded').gte('created_at', todayStr),
+    ])
+    setRoutes(routesRes.data ?? [])
+    setBoardingToday(boardingRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const todayStr = new Date().toISOString().slice(0, 10)
-
-  const [routesRes, stopsRes, boardingRes] = await Promise.all([
-    supabase.from('agreement_routes').select('id').limit(100),
-    supabase.from('agreement_routes').select('id, agreement_id').limit(100),
-    supabase.from('boarding_events').select('id, boarded').gte('created_at', todayStr),
-  ])
-
-  const routes = routesRes.data ?? []
-  const boardingToday = boardingRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const totalRoutes = routes.length
   const boardedToday = boardingToday.filter(b => b.boarded).length
@@ -55,6 +59,8 @@ export default async function Page() {
       alert: absentToday > 3,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">

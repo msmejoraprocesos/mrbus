@@ -1,24 +1,38 @@
-import { createClient } from "@/lib/supabase/server"
-import { Metadata } from "next"
-import { fmtDate, cn } from "@/lib/utils/index"
-export const metadata: Metadata = { title: "Alertas Inteligentes" }
-export const dynamic = "force-dynamic"
-export default async function Page() {
-  const supabase = createClient()
+'use client'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient } from "@/lib/supabase/client"
+import { fmtDate } from "@/lib/utils/index"
+
+export default function Page() {
+  const [vehDocs, setVehDocs] = useState<any[]>([])
+  const [drvDocs, setDrvDocs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const today = new Date()
+    const in30 = new Date(today); in30.setDate(today.getDate() + 30)
+    const [{ data: vd }, { data: dd }] = await Promise.all([
+      supabase.from("vehicle_documents").select("*, vehicle:vehicles(plate)").lte("expiry_date", in30.toISOString().split("T")[0]).neq("status", "expired").order("expiry_date"),
+      supabase.from("driver_documents").select("*, driver:drivers(first_name,last_name)").lte("expiry_date", in30.toISOString().split("T")[0]).order("expiry_date"),
+    ])
+    setVehDocs(vd ?? [])
+    setDrvDocs(dd ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
   const today = new Date()
-  const in30 = new Date(today); in30.setDate(today.getDate() + 30)
-  const [{ data: vehDocs }, { data: drvDocs }, { data: compliance }] = await Promise.all([
-    supabase.from("vehicle_documents").select("*, vehicle:vehicles(plate)").lte("expiry_date", in30.toISOString().split("T")[0]).neq("status", "expired").order("expiry_date"),
-    supabase.from("driver_documents").select("*, driver:drivers(first_name,last_name)").lte("expiry_date", in30.toISOString().split("T")[0]).order("expiry_date"),
-    supabase.from("compliance_alerts").select("*").eq("is_resolved", false).order("expiry_date"),
-  ])
-  const allVehDocs = vehDocs ?? []
-  const allDrvDocs = drvDocs ?? []
-  const allAlerts = compliance ?? []
-  const criticalCount = [...allVehDocs, ...allDrvDocs].filter((d:any) => {
+  const allVehDocs = vehDocs
+  const allDrvDocs = drvDocs
+  const criticalCount = [...allVehDocs, ...allDrvDocs].filter((d: any) => {
     const days = Math.ceil((new Date(d.expiry_date).getTime() - today.getTime()) / 86400000)
     return days <= 7
   }).length
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Cargando alertas...</div>
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">

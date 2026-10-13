@@ -1,26 +1,33 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { Users, FileText, FileSignature, Briefcase, CalendarCheck, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Comercial — MrBus' }
+export default function Page() {
+  const [leads, setLeads] = useState<any[]>([])
+  const [quotes, setQuotes] = useState<any[]>([])
+  const [contracts, setContracts] = useState<any[]>([])
+  const [overdueActivities, setOverdueActivities] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const [leadsRes, quotesRes, contractsRes, activitiesRes] = await Promise.all([
+      supabase.from('leads').select('id, status').neq('status', 'lost').neq('status', 'won'),
+      supabase.from('quotations').select('id, status, total_price'),
+      supabase.from('contracts').select('id, status'),
+      supabase.from('lead_actividades').select('id, completada, fecha').eq('completada', false).lte('fecha', todayStr),
+    ])
+    setLeads(leadsRes.data ?? [])
+    setQuotes(quotesRes.data ?? [])
+    setContracts(contractsRes.data ?? [])
+    setOverdueActivities(activitiesRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const todayStr = new Date().toISOString().slice(0, 10)
-
-  const [leadsRes, quotesRes, contractsRes, activitiesRes] = await Promise.all([
-    supabase.from('leads').select('id, status').neq('status', 'lost').neq('status', 'won'),
-    supabase.from('quotations').select('id, status, total_price'),
-    supabase.from('contracts').select('id, status'),
-    supabase.from('lead_actividades').select('id, completada, fecha').eq('completada', false).lte('fecha', todayStr),
-  ])
-
-  const leads = leadsRes.data ?? []
-  const quotes = quotesRes.data ?? []
-  const contracts = contractsRes.data ?? []
-  const overdueActivities = activitiesRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const activeLeads = leads.length
   const pendingQuotes = quotes.filter(q => q.status === 'pending').length
@@ -73,6 +80,8 @@ export default async function Page() {
       alert: pendingActivities > 0,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">

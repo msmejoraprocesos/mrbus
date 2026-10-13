@@ -1,20 +1,26 @@
-import { Metadata } from 'next'
+'use client'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { FileText, Truck, Receipt, ChevronRight, AlertTriangle } from 'lucide-react'
 
-export const metadata: Metadata = { title: 'Fiscal — MrBus' }
+export default function Page() {
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [cartaPorte, setCartaPorte] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function Page() {
-  const supabase = await createClient()
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const [invoicesRes, cartaPorteRes] = await Promise.all([
+      supabase.from('invoices').select('id, status'),
+      supabase.from('shipping_orders').select('id, carta_porte_uuid').not('carta_porte_uuid', 'is', null),
+    ])
+    setInvoices(invoicesRes.data ?? [])
+    setCartaPorte(cartaPorteRes.data ?? [])
+    setLoading(false)
+  }, [])
 
-  const [invoicesRes, cartaPorteRes] = await Promise.all([
-    supabase.from('invoices').select('id, status'),
-    supabase.from('shipping_orders').select('id, carta_porte_uuid').not('carta_porte_uuid', 'is', null),
-  ])
-
-  const invoices = invoicesRes.data ?? []
-  const cartaPorte = cartaPorteRes.data ?? []
+  useEffect(() => { load() }, [load])
 
   const timbrados = invoices.filter(i => i.status === 'stamped').length
   const borradores = invoices.filter(i => i.status === 'draft').length
@@ -43,6 +49,8 @@ export default async function Page() {
       alert: false,
     },
   ]
+
+  if (loading) return <div className="flex items-center justify-center h-40 text-slate-400 text-sm">Cargando...</div>
 
   return (
     <div className="space-y-6">
