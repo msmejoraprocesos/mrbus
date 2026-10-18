@@ -13,7 +13,7 @@ import {
   UserCog, Banknote, CreditCard, PiggyBank, BookOpen, TrendingUp, TrendingDown, FileBarChart,
   Building2, Archive, ShoppingCart, Warehouse, CheckSquare,
   FileBadge, Bell, PieChart,
-  Ship, PackageCheck, Layers, Calendar,
+  Ship, PackageCheck, Layers, Calendar, Calculator,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -55,6 +55,7 @@ const GROUPS: Grp[] = [
         href: '/turismo', label: 'Turismo', icon: Star,
         dot: '#06B6D4', activeBg: 'rgba(6,182,212,0.15)',
         subs: [
+          { href: '/turismo/cotizador/lista',    label: 'Cotizador',      icon: Calculator },
           { href: '/turismo/reservaciones',      label: 'Reservaciones',  icon: Ticket },
           { href: '/turismo/paquetes',           label: 'Paquetes',       icon: Package },
           { href: '/turismo/abordaje',           label: 'Abordaje',       icon: UserCheck },

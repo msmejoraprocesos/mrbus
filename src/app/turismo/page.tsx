@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Ticket, QrCode, Package2, Star, Users, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Ticket, QrCode, Package2, Star, Users, ChevronRight, AlertTriangle, Calculator } from 'lucide-react'
 
 export default function Page() {
   const [reservations, setReservations] = useState<any[]>([])
@@ -32,6 +32,16 @@ export default function Page() {
   const totalAvailable = agencyTrips.reduce((s, t) => s + ((t.total_seats ?? 0) - (t.sold_seats ?? 0)), 0)
 
   const modules = [
+    {
+      name: 'Cotizador',
+      desc: 'Wizard de 5 pasos: ruta, unidad, asientos, operador y precio.',
+      href: '/turismo/cotizador/lista',
+      icon: Calculator,
+      color: '#1565C0',
+      bg: '#E8F0FB',
+      stats: ['Cotización en minutos', 'Precio por asiento automático'],
+      alert: false,
+    },
     {
       name: 'Reservaciones',
       desc: 'Venta de asientos por viaje. Selección, cobro y confirmación.',
