@@ -74,9 +74,9 @@ CREATE INDEX IF NOT EXISTS idx_quotes_vehicle    ON quotes(vehicle_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_driver     ON quotes(driver_id);
 
 -- Secuencia de folios
-INSERT INTO folio_sequences (entity, prefix, last_number, year)
-VALUES ('quotes', 'COT', 0, EXTRACT(YEAR FROM now())::INT)
-ON CONFLICT (entity, year) DO NOTHING;
+INSERT INTO folio_sequences (prefix, last_value)
+VALUES ('COT', 0)
+ON CONFLICT (prefix) DO NOTHING;
 
 -- RLS
 ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
